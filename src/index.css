@@ -1,4 +1,59 @@
 body {
   margin: 0;
   font-family: system-ui, sans-serif;
+  background: #f6f6f6;
+}
+
+/* Basic button styling */
+button {
+  cursor: pointer;
+  padding: 0.75rem 1rem;
+  border: 1px solid #222;
+  border-radius: 8px;
+  background: white;
+  font-size: 1rem;
+}
+
+/* Simple hover feedback */
+button:hover {
+  background: #eee;
+}
+
+/* Main app container */
+.app {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* Placeholder area for the face stimulus */
+.stimulus-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 500px;
+  margin: 1.5rem 0;
+  border: 2px dashed #aaa;
+  border-radius: 12px;
+  background: white;
+  font-size: 1.5rem;
+  text-align: center;
+}
+
+/* Grid layout for the six emotion response buttons */
+.button-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(120px, 1fr));
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+/* Styles the raw JSON trial logs shown at the end of the session */
+pre {
+  max-height: 500px;
+  overflow: auto;
+  padding: 1rem;
+  background: #111;
+  color: #eee;
+  border-radius: 8px;
 }
