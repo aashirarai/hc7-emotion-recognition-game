@@ -1,8 +1,10 @@
+// Import the main game session component
+import GameSession from './game/GameSession'
+
 function App() {
   return (
-    <main>
-      <h1>Online Emotion-Recognition Game</h1>
-      <p>Project scaffold is ready.</p>
+    <main className="app">
+      <GameSession />
     </main>
   )
 }
