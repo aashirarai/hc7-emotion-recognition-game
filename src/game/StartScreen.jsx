@@ -1,14 +1,18 @@
-// Start screen shown before the session begins
-// It receives an onStart function from GameSession
-// When the button is clicked, GameSession starts the trial loop
 function StartScreen({ onStart }) {
-  return (
-    <section>
-      <h2>Emotion Recognition Game</h2>
-
-      <button onClick={onStart}>Start</button>
-    </section>
-  )
+    return (
+        <div className="card">
+            <div>
+                <h1>Emotion Recognition</h1>
+                <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
+                    Look at each face and identify the emotion you see.
+                    Answer as quickly and accurately as you can.
+                </p>
+            </div>
+            <button className="btn-primary" onClick={onStart}>
+                Start session
+            </button>
+        </div>
+    )
 }
 
 export default StartScreen

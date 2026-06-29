@@ -145,23 +145,20 @@ function GameSession() {
 
     // If all trials are complete, show the session summary
     if (sessionComplete) {
-        // Count the number of correct answers
         const correctCount = trialLogs.filter((trial) => trial.isCorrect).length
 
         return (
-            <section>
-                <h2>Session complete</h2>
-
-                <p>
-                    Score: {correctCount} / {trialLogs.length}
-                </p>
-
-                {/* Displays the raw logs for now */}
-                <h3>Trial logs</h3>
-                <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
-
-                <button onClick={handleRestart}>New Game</button>
-            </section>
+            <div className="card">
+                <div>
+                    <div className="score-value">{correctCount} / {trialLogs.length}</div>
+                    <p className="score-label">correct answers</p>
+                </div>
+                <details>
+                    <summary>View trial logs</summary>
+                    <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
+                </details>
+                <button className="btn-primary" onClick={handleRestart}>New session</button>
+            </div>
         )
     }
 

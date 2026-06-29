@@ -1,4 +1,3 @@
-// Import the list of emotion choices
 import { emotionOptions } from "../stimuli/stimuliManifest";
 
 function StimulusDisplay({ stimulus }) {
@@ -8,7 +7,6 @@ function StimulusDisplay({ stimulus }) {
                 src={stimulus.imageSrc}
                 alt={`${stimulus.emotion} face`}
                 onError={(e) => {
-                    // Fall back to emoji if the image file is missing
                     e.currentTarget.style.display = 'none';
                     e.currentTarget.nextSibling.style.display = 'block';
                 }}
@@ -18,19 +16,22 @@ function StimulusDisplay({ stimulus }) {
     return null;
 }
 
-// TrialScreen displays the current stimulus and answer buttons
-// It sends the selected emotion back up to GameSession
-function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer}) {
-    return (
-        <section>
-            {/* Shows progress through the session */}
-            <p>
-                Trial {trialNumber} of {totalTrials}
-            </p>
+function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer }) {
+    const progressPct = (trialNumber / totalTrials) * 100
 
+    return (
+        <div className="card">
+            {/* Progress */}
+            <div className="progress-header">
+                <div className="progress-track">
+                    <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+                </div>
+                <span className="progress-label">Trial {trialNumber} of {totalTrials}</span>
+            </div>
+
+            {/* Stimulus */}
             <div className="stimulus-card">
                 <StimulusDisplay stimulus={stimulus} />
-                {/* Shown only when the image fails to load or no imagePath is set */}
                 <span
                     style={{
                         fontSize: '6rem',
@@ -42,19 +43,23 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer}) {
                     {stimulus.emoji}
                 </span>
             </div>
-            
-            <h2>Which emotion is this?</h2>
 
-            {/* Create one button per emotion */}
-            <div className="button-grid">
-                {/* When clicked, the selected emotion is passed to GameSession */}
-                {emotionOptions.map((emotion) => (
-                    <button key={emotion} onClick={() => onAnswer(emotion)} >
-                        {emotion}
-                    </button>
-                ))}
+            {/* Response buttons */}
+            <div>
+                <h2>Which emotion is this?</h2>
+                <div className="button-grid">
+                    {emotionOptions.map((emotion) => (
+                        <button
+                            key={emotion}
+                            className="btn-emotion"
+                            onClick={() => onAnswer(emotion)}
+                        >
+                            {emotion}
+                        </button>
+                    ))}
+                </div>
             </div>
-        </section>
+        </div>
     )
 }
 
