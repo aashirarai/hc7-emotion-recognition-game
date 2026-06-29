@@ -2,10 +2,10 @@
 import { emotionOptions } from "../stimuli/stimuliManifest";
 
 function StimulusDisplay({ stimulus }) {
-    if (stimulus.imagePath) {
+    if (stimulus.imageSrc) {
         return (
             <img
-                src={stimulus.imagePath}
+                src={stimulus.imageSrc}
                 alt={`${stimulus.emotion} face`}
                 onError={(e) => {
                     // Fall back to emoji if the image file is missing
@@ -34,7 +34,7 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer}) {
                 <span
                     style={{
                         fontSize: '6rem',
-                        display: stimulus.imagePath ? 'none' : 'block',
+                        display: stimulus.imageSrc ? 'none' : 'block',
                     }}
                     role="img"
                     aria-label={stimulus.emotion}

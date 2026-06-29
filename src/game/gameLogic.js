@@ -32,3 +32,11 @@ export function createTrialLog({
 export function createSessionId() {
     return `session_${Date.now()}`
 }
+
+// Returns a shuffled copy of the stimuli array for one session.
+// Pass a count to limit the number of trials (e.g. 12 trials from a pool of 60 images).
+// Omit count to use every image exactly once.
+export function buildTrialSequence(stimuli, count = null) {
+    const shuffled = [...stimuli].sort(() => Math.random() - 0.5)
+    return count !== null ? shuffled.slice(0, count) : shuffled
+}
