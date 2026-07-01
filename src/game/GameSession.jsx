@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 
-import { createSessionId, createTrialLog, downloadCSV } from './gameLogic'
+import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -17,6 +17,9 @@ function GameSession() {
 
     // Stores the pseudonymous sesion ID
     const [sessionId, setSessionId] = useState(null)
+
+    // Shuffled list of stimuli for the current session, generated on Start
+    const [trialSequence, setTrialSequence] = useState([])
 
     // Stores which trial the user is currently on
     const [currentTrialIndex, setCurrentTrialIndex] = useState(0)
@@ -34,11 +37,11 @@ function GameSession() {
     // Controls whether the feedback screen is shown
     const [showFeedback, setShowFeedback] = useState(false)
 
-    // Get the current stimulus from the stimulus list
-    const currentStimulus = stimuli[currentTrialIndex]
+    // Get the current stimulus from the shuffled sequence
+    const currentStimulus = trialSequence[currentTrialIndex]
 
     // Total number of trials
-    const totalTrials = stimuli.length
+    const totalTrials = trialSequence.length
 
     // Start timing each trial when:
     // - the session has started
@@ -56,6 +59,9 @@ function GameSession() {
     function handleStart() {
         // Create a new pseudonymous sesion ID
         setSessionId(createSessionId())
+
+        // Build a fresh shuffled trial sequence for this session
+        setTrialSequence(buildTrialSequence(stimuli, 10))
 
         // Reset all game state
         setSessionStarted(true)
@@ -143,25 +149,23 @@ function GameSession() {
 
     // If all trials are complete, show the session summary
     if (sessionComplete) {
-        // Count the number of correct answers
         const correctCount = trialLogs.filter((trial) => trial.isCorrect).length
 
         return (
-            <section>
-                <h2>Session complete</h2>
-
-                <p>
-                    Score: {correctCount} / {trialLogs.length}
-                </p>
-
-                {/* Displays the raw logs for now */}
-                <h3>Trial logs</h3>
-                <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
-
+            <div className="card">
+                <div>
+                    <div className="score-value">{correctCount} / {trialLogs.length}</div>
+                    <p className="score-label">correct answers</p>
+                </div>
+                <details>
+                    <summary>View trial logs</summary>
+                    <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
+                </details>
+                
                 <button onClick={() => downloadCSV(trialLogs, `${sessionId}_logs.csv`)}>Download CSV</button>
+                <button className="btn-primary" onClick={handleRestart}>New session</button>
 
-                <button onClick={handleRestart}>New Game</button>
-            </section>
+            </div>
         )
     }
 

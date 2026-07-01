@@ -1,28 +1,24 @@
-// Feedback screen shown after the user answers a question
-// It receives the most recent trial log and displays the result
 function FeedbackScreen({ lastTrialLog, onNext, isFinalTrial }) {
+    const { isCorrect, selectedEmotion, correctEmotion, reactionTimeMs } = lastTrialLog
+
     return (
-        <section>
-            {/* Show different feedback depending on answer */}
-            <h2>{lastTrialLog.isCorrect ? 'Correct!' : 'Not quite'}</h2>
+        <div className="card">
+            <div className={`feedback-banner ${isCorrect ? 'correct' : 'incorrect'}`}>
+                {isCorrect ? '✓ Correct!' : '✗ Not quite'}
+            </div>
 
-            <p>
-                You selected: <strong>{lastTrialLog.selectedEmotion}</strong>
-            </p>
+            <div className="feedback-details">
+                <p>You selected: <strong>{selectedEmotion}</strong></p>
+                {!isCorrect && (
+                    <p>Correct answer: <strong>{correctEmotion}</strong></p>
+                )}
+                <p>Reaction time: <strong>{reactionTimeMs} ms</strong></p>
+            </div>
 
-            <p>
-                Correct answer: <strong>{lastTrialLog.correctEmotion}</strong>
-            </p>
-
-            <p>
-                Reaction time: <strong>{lastTrialLog.reactionTimeMs} ms</strong>
-            </p>
-
-            {/* Button text changes on the final trial */}
-            <button onClick={onNext}>
-                {isFinalTrial ? 'Finish' : 'Next'}
+            <button className="btn-primary" onClick={onNext}>
+                {isFinalTrial ? 'Finish' : 'Next →'}
             </button>
-        </section>
+        </div>
     )
 }
 
