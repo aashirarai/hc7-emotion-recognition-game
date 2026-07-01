@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 
-import { createSessionId, createTrialLog } from './gameLogic'
+import { createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -83,8 +83,11 @@ function GameSession() {
             reactionTimeMs
         })
 
+        // Create the updated full session log immediately
+        const updatedLogs = [...trialLogs, log]
+
         // Add the new trial log to the session log array
-        setTrialLogs((previousLogs) => [...previousLogs, log])
+        setTrialLogs(updatedLogs)
 
         // Store the most recent trial log for the feedback screen
         setLastTrialLog(log)
@@ -93,7 +96,8 @@ function GameSession() {
         setShowFeedback(true)
 
         // Debugging output
-        console.log('Trial log:', log)   
+        console.log('Trial log: ', log)   
+        console.log('Updated session logs: ', updatedLogs)
     }
 
     // Called when the user clicks "Next" or "Finish"
@@ -153,6 +157,8 @@ function GameSession() {
                 {/* Displays the raw logs for now */}
                 <h3>Trial logs</h3>
                 <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
+
+                <button onClick={() => downloadCSV(trialLogs, `${sessionId}_logs.csv`)}>Download CSV</button>
 
                 <button onClick={handleRestart}>New Game</button>
             </section>
