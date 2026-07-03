@@ -1,8 +1,9 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 
 import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
+import { computeSessionComposite } from '../adaptive/scoring'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -24,9 +25,9 @@ function GameSession() {
     // Stores which trial the user is currently on
     const [currentTrialIndex, setCurrentTrialIndex] = useState(0)
 
-    // Stores the time when the current trial started
-    // Used to calculate reaction time
-    const [trialStartTime, setTrialStartTime] = useState(null)
+    // Stores the time when the current trial started, used to calculate reaction time.
+    // A ref rather than state — changing it shouldn't trigger a re-render.
+    const trialStartTime = useRef(null)
 
     // Stores all trial logs from the current session
     const [trialLogs, setTrialLogs] = useState([])
@@ -50,7 +51,7 @@ function GameSession() {
     useEffect(() => {
         if (sessionStarted && !showFeedback && !sessionComplete) {
             // performance.now() gives a high-resolution timestamp
-            setTrialStartTime(performance.now())
+            trialStartTime.current = performance.now()
         }
     }, [sessionStarted, currentTrialIndex, showFeedback, sessionComplete])
 
@@ -75,10 +76,10 @@ function GameSession() {
     // Called when the user selects an answer
     function handleAnswer(selectedEmotion) {
         // Safety check
-        if (trialStartTime === null || !currentStimulus) return
+        if (trialStartTime.current === null || !currentStimulus) return
 
         // Calculate reaction time from trial start to button click
-        const reactionTimeMs = Math.round(performance.now() - trialStartTime)
+        const reactionTimeMs = Math.round(performance.now() - trialStartTime.current)
 
         // Create a structured trial log
         const log = createTrialLog({
@@ -149,19 +150,28 @@ function GameSession() {
 
     // If all trials are complete, show the session summary
     if (sessionComplete) {
-        const correctCount = trialLogs.filter((trial) => trial.isCorrect).length
+        const { correctCount, totalTrials: total, compositeScore, meanReactionTimeMs } =
+            computeSessionComposite(trialLogs)
 
         return (
             <div className="card">
                 <div>
-                    <div className="score-value">{correctCount} / {trialLogs.length}</div>
+                    <div className="score-value">{correctCount} / {total}</div>
                     <p className="score-label">correct answers</p>
+                </div>
+                <div>
+                    <div className="score-value">{compositeScore}</div>
+                    <p className="score-label">composite score (accuracy 70% + speed 30%)</p>
+                </div>
+                <div>
+                    <div className="score-value">{meanReactionTimeMs} ms</div>
+                    <p className="score-label">average response time</p>
                 </div>
                 <details>
                     <summary>View trial logs</summary>
                     <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
                 </details>
-                
+
                 <button onClick={() => downloadCSV(trialLogs, `${sessionId}_logs.csv`)}>Download CSV</button>
                 <button className="btn-primary" onClick={handleRestart}>New session</button>
 
