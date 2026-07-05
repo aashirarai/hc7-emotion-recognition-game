@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
+import { requestWebcamPermission } from '../gaze/requestWebcamPermission'
 
 import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 
@@ -20,6 +21,10 @@ function GameSession() {
 
     // Stores metadata about the current session
     const [sessionMetadata, setSessionMetadata] = useState(null)
+
+    // Stores the webcam stream if permission is granted
+    // This will later be used by the gaze module
+    const [webcamStream, setWebcamStream] = useState(null)
 
     // Shuffled list of stimuli for the current session, generated on Start
     const [trialSequence, setTrialSequence] = useState([])
@@ -59,10 +64,29 @@ function GameSession() {
 
     
     // Called when the user chooses how to start the session
-    function handleStart({ webcamRequested }) {
+    async function handleStart({ webcamRequested }) {
         // Create a new pseudonymous sesion ID
         const newSessionId = createSessionId()
+
+        // Default webcam values
+        // These are used if the user starts without webcam
+        let webcamEnabled = false
+        let webcamPermissionStatus = "not_requested"
+        let stream = null
+
+        // Only request browser webcam access if the user chose the webcam option
+        if (webcamRequested) {
+            const webcamResult = await requestWebcamPermission()
+
+            webcamEnabled = webcamResult.webcamEnabled
+            webcamPermissionStatus = webcamResult.webcamPermissionStatus
+            stream = webcamResult.stream
+        }
+
         setSessionId(newSessionId)
+
+        // Store the webcam stream for later use
+        setWebcamStream(stream)
 
         // Store session metadata
         // This only records whether the user chose the webcam option
@@ -70,10 +94,8 @@ function GameSession() {
             sessionId: newSessionId,
             startedAt: new Date().toISOString(),
             webcamRequested,
-            webcamEnabled: false,
-            webcamPermissionStatus: webcamRequested
-                ? "requested"
-                : "not_requested",
+            webcamEnabled,
+            webcamPermissionStatus
         })
 
         // Build a fresh shuffled trial sequence for this session
@@ -147,10 +169,15 @@ function GameSession() {
 
     // Resets everything and returns to the start screen
     function handleRestart() {
+        if (webcamStream) {
+            webcamStream.getTracks().forEach((track) => track.stop())
+        }
+
         setSessionStarted(false)
         setSessionComplete(false)
         setSessionId(null)
         setSessionMetadata(null)
+        setWebcamStream(null)
         setCurrentTrialIndex(0)
         setTrialLogs([])
         setLastTrialLog(null)
