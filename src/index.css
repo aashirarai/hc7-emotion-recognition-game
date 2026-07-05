@@ -189,3 +189,24 @@ pre {
   border-radius: 10px;
   font-size: 0.78rem;
 }
+
+.webcam-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 16px;
+    color: var(--text-muted);
+}
+
+.webcam-status {
+    margin: 0;
+    font-size: 0.9rem;
+}
+
+.webcam-video {
+    width: 120px;
+    height: 90px;
+    border-radius: 8px;
+    object-fit: cover;
+    transform: scaleX(-1);
+}

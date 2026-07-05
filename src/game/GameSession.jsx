@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 import { requestWebcamPermission } from '../gaze/requestWebcamPermission'
+import WebcamPreview from '../gaze/WebcamPreview'
 
 import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 
@@ -232,12 +233,16 @@ function GameSession() {
 
     // Otherwise, show the active trial
     return (
+    <>
+        <WebcamPreview stream={webcamStream} />
+
         <TrialScreen
-        stimulus={currentStimulus}
-        trialNumber={currentTrialIndex + 1}
-        totalTrials={totalTrials}
-        onAnswer={handleAnswer}
+            stimulus={currentStimulus}
+            trialNumber={currentTrialIndex + 1}
+            totalTrials={totalTrials}
+            onAnswer={handleAnswer}
         />
+    </>
     )
 }
 
