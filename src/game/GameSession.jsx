@@ -18,6 +18,9 @@ function GameSession() {
     // Stores the pseudonymous sesion ID
     const [sessionId, setSessionId] = useState(null)
 
+    // Stores metadata about the current session
+    const [sessionMetadata, setSessionMetadata] = useState(null)
+
     // Shuffled list of stimuli for the current session, generated on Start
     const [trialSequence, setTrialSequence] = useState([])
 
@@ -55,10 +58,23 @@ function GameSession() {
     }, [sessionStarted, currentTrialIndex, showFeedback, sessionComplete])
 
     
-    // Called when the user clicks "Start"
-    function handleStart() {
+    // Called when the user chooses how to start the session
+    function handleStart({ webcamRequested }) {
         // Create a new pseudonymous sesion ID
-        setSessionId(createSessionId())
+        const newSessionId = createSessionId()
+        setSessionId(newSessionId)
+
+        // Store session metadata
+        // This only records whether the user chose the webcam option
+        setSessionMetadata({
+            sessionId: newSessionId,
+            startedAt: new Date().toISOString(),
+            webcamRequested,
+            webcamEnabled: false,
+            webcamPermissionStatus: webcamRequested
+                ? "requested"
+                : "not_requested",
+        })
 
         // Build a fresh shuffled trial sequence for this session
         setTrialSequence(buildTrialSequence(stimuli, 10))
@@ -134,6 +150,7 @@ function GameSession() {
         setSessionStarted(false)
         setSessionComplete(false)
         setSessionId(null)
+        setSessionMetadata(null)
         setCurrentTrialIndex(0)
         setTrialLogs([])
         setLastTrialLog(null)
@@ -157,6 +174,12 @@ function GameSession() {
                     <div className="score-value">{correctCount} / {trialLogs.length}</div>
                     <p className="score-label">correct answers</p>
                 </div>
+
+                <details>
+                    <summary>View session metadata</summary>
+                    <pre>{JSON.stringify(sessionMetadata, null, 2)}</pre>
+                </details>
+
                 <details>
                     <summary>View trial logs</summary>
                     <pre>{JSON.stringify(trialLogs, null, 2)}</pre>
