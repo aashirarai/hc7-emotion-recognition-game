@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 
-function WebcamPreview({ stream }) {
+function WebcamPreview({ stream, large = false }) {
     const videoRef = useRef(null)
 
     useEffect(() => {
@@ -12,7 +12,7 @@ function WebcamPreview({ stream }) {
     if (!stream) return null
 
     return (
-        <div className="webcam-preview">
+        <div className={`webcam-preview ${large ? 'webcam-preview-large' : ''}`}>
             <p className="webcam-status">Webcam active</p>
 
             <video

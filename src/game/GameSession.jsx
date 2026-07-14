@@ -10,6 +10,8 @@ import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
 import FeedbackScreen from './FeedbackScreen'
 
+import GazeTestPage from '../gaze/GazeTestPage'
+
 function GameSession() {
     // Tracks whether the user has started the session
     const [sessionStarted, setSessionStarted] = useState(false)
@@ -26,6 +28,9 @@ function GameSession() {
     // Stores the webcam stream if permission is granted
     // This will later be used by the gaze module
     const [webcamStream, setWebcamStream] = useState(null)
+
+    // Tracks whether the game has entered gaze test mode
+    const [showGazeTest, setShowGazeTest] = useState(false)
 
     // Shuffled list of stimuli for the current session, generated on Start
     const [trialSequence, setTrialSequence] = useState([])
@@ -179,6 +184,7 @@ function GameSession() {
         setSessionId(null)
         setSessionMetadata(null)
         setWebcamStream(null)
+        setShowGazeTest(false)
         setCurrentTrialIndex(0)
         setTrialLogs([])
         setLastTrialLog(null)
@@ -220,6 +226,25 @@ function GameSession() {
         )
     }
 
+    // If the user has entered gaze test mode, show testing page
+    if (showGazeTest) {
+    return (
+        <>
+            <button
+                style={{ marginBottom: '1rem' }}
+                onClick={() => setShowGazeTest(false)}
+            >
+                Back to game
+            </button>
+
+            <GazeTestPage
+                webcamStream={webcamStream}
+                sessionMetadata={sessionMetadata}
+            />
+        </>
+    )
+}
+
     // If the user has answered the current trial, show feedback
     if (showFeedback && lastTrialLog) {
         return (
@@ -235,6 +260,15 @@ function GameSession() {
     return (
     <>
         <WebcamPreview stream={webcamStream} />
+
+        {webcamStream && (
+            <button
+                style={{ marginBottom: '1rem' }}
+                onClick={() => setShowGazeTest(true)}
+            >
+                Open gaze test
+            </button>
+        )}
 
         <TrialScreen
             stimulus={currentStimulus}

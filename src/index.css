@@ -50,6 +50,16 @@ p  { margin: 0; }
   gap: 1.5rem;
 }
 
+.gaze-test-card {
+    max-width: 820px;
+    align-items: center;
+}
+
+.gaze-test-card details,
+.gaze-debug-panel {
+    width: 100%;
+}
+
 /* ─── Buttons ─── */
 button {
   cursor: pointer;
@@ -192,8 +202,8 @@ pre {
 
 .webcam-preview {
     display: flex;
-    align-items: center;
-    gap: 12px;
+    flex-direction: column;
+    gap: 8px;
     margin-bottom: 16px;
     color: var(--text-muted);
 }
@@ -204,9 +214,15 @@ pre {
 }
 
 .webcam-video {
-    width: 120px;
-    height: 90px;
+    width: 160px;
+    height: 120px;
     border-radius: 8px;
     object-fit: cover;
     transform: scaleX(-1);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+}
+
+.webcam-preview-large .webcam-video {
+    width: 640px;
+    height: 480px;
 }
