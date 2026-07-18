@@ -7,7 +7,8 @@ The schema may change during development, but any changes to logged fields shoul
 ## Trial-level fields
 | Field | Type | Description |
 |---|---|---|
-| sessionId | string | Pseudonymous session identifier |
+| participantId | string | Participant identifier entered at login (normalised to uppercase) |
+| sessionId | string | Pseudonymous session identifier (`{participantId}_{timestamp}`) |
 | trialId | number/string | Unique trial ID |
 | stimulusId | string | ID of displayed stimulus |
 | correctEmotion | string | Correct emotion label |
@@ -80,6 +81,42 @@ Computed after each session in `src/adaptive/scoring.js` (not yet implemented).
 | speedScore | number (0–1) | Normalised mean RT on correct trials only (300–6000 ms window) |
 | compositeScore | number (0–100) | `round(100 × (0.70 × accuracyScore + 0.30 × speedScore))` |
 | meanReactionTimeMs | number | Mean reaction time across all trials in the session |
+
+## Participant login fields
+
+Participants "log in" with a self-chosen participant ID and 4-digit PIN so
+the game can find their previous results on the same browser/device. **This
+is an identification convenience, not authentication** — there is no server,
+so the PIN cannot stop someone with access to the browser's storage from
+reading another participant's data. It only guards against accidentally
+loading the wrong child's profile on a shared device.
+
+### Participant store (persisted in `localStorage`)
+Key: `hc7_participants_v1`
+
+One entry per participant, keyed by `participantId`:
+
+| Field | Type | Description |
+|---|---|---|
+| pinHash | string | SHA-256 hex digest of the 4-digit PIN (not stored in plain text) |
+| createdAt | string | ISO timestamp of first login/registration |
+| sessions | array | Up to the most recent 20 session summaries, see below |
+
+### Session summary (per entry in `sessions`)
+| Field | Type | Description |
+|---|---|---|
+| sessionId | string | Matches `sessionId` in the trial-level logs for that session |
+| compositeScore | number (0–100) | See "Session-level composite score" below |
+| accuracyScore | number (0–1) | `correctCount / totalTrials` |
+| correctCount | number | Number of correct trials in the session |
+| totalTrials | number | Total trials in the session |
+| meanReactionTimeMs | number | Mean reaction time across all trials in the session |
+| timestamp | string | ISO timestamp recording when the session finished |
+
+Note: this session-summary history is what the adaptive difficulty module's
+`history` field (see below) is expected to read from once per-participant
+adaptive state is implemented — currently `hc7_adaptive_state_v1` is a single
+global key and is not yet participant-scoped.
 
 ## Gaze estimation fields
 | Field | Type | Description |
