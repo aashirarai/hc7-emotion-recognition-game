@@ -1,5 +1,11 @@
 import kdefMetadata from './kdefMetadata.json'
 
+// When true, only front-facing ("S" / straight) KDEF angles are included in
+// the playable stimulus set. Off-angle images (FL, HL, HR, FR) stay in the
+// repo and in kdefMetadata.json untouched — flip this back to false to bring
+// them back into rotation later.
+const FRONT_FACING_ONLY = true
+
 // Emoji shown as fallback if an image file is missing or fails to load
 const EMOTION_EMOJIS = {
     happy:   '😊',
@@ -39,7 +45,7 @@ export const stimuli = Object.entries(imageModules).map(([path, module]) => {
         difficulty: meta?.difficultyTier ?? null,
         angle:      meta?.angle ?? null,
     }
-})
+}).filter(({ angle }) => !FRONT_FACING_ONLY || angle === 'S' || angle === null)
 
 // Answer options shown to the user on every trial.
 // Includes neutral now that the KDEF dataset covers it (NE category).
