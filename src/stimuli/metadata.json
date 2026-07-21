@@ -50596,7 +50596,7 @@
     "gender": "F",
     "identity": "CF02",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF04ANS": {
     "type": "cartoon",
@@ -50605,7 +50605,7 @@
     "gender": "F",
     "identity": "CF04",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM01ANS": {
     "type": "cartoon",
@@ -50614,7 +50614,7 @@
     "gender": "M",
     "identity": "CM01",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM03ANS": {
     "type": "cartoon",
@@ -50623,7 +50623,7 @@
     "gender": "M",
     "identity": "CM03",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM05ANS": {
     "type": "cartoon",
@@ -50632,7 +50632,7 @@
     "gender": "M",
     "identity": "CM05",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF22DIS": {
     "type": "cartoon",
@@ -50641,7 +50641,7 @@
     "gender": "F",
     "identity": "CF22",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF28DIS": {
     "type": "cartoon",
@@ -50650,7 +50650,7 @@
     "gender": "F",
     "identity": "CF28",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM26DIS": {
     "type": "cartoon",
@@ -50659,7 +50659,7 @@
     "gender": "M",
     "identity": "CM26",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM27DIS": {
     "type": "cartoon",
@@ -50668,7 +50668,7 @@
     "gender": "M",
     "identity": "CM27",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM30DIS": {
     "type": "cartoon",
@@ -50677,7 +50677,7 @@
     "gender": "M",
     "identity": "CM30",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF11AFS": {
     "type": "cartoon",
@@ -50686,7 +50686,7 @@
     "gender": "F",
     "identity": "CF11",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF13AFS": {
     "type": "cartoon",
@@ -50695,7 +50695,7 @@
     "gender": "F",
     "identity": "CF13",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF15AFS": {
     "type": "cartoon",
@@ -50704,7 +50704,7 @@
     "gender": "F",
     "identity": "CF15",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM12AFS": {
     "type": "cartoon",
@@ -50713,7 +50713,7 @@
     "gender": "M",
     "identity": "CM12",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM14AFS": {
     "type": "cartoon",
@@ -50722,7 +50722,7 @@
     "gender": "M",
     "identity": "CM14",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF17HAS": {
     "type": "cartoon",
@@ -50731,7 +50731,7 @@
     "gender": "F",
     "identity": "CF17",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF19HAS": {
     "type": "cartoon",
@@ -50740,7 +50740,7 @@
     "gender": "F",
     "identity": "CF19",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM16HAS": {
     "type": "cartoon",
@@ -50749,7 +50749,7 @@
     "gender": "M",
     "identity": "CM16",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM18HAS": {
     "type": "cartoon",
@@ -50758,7 +50758,7 @@
     "gender": "M",
     "identity": "CM18",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM20HAS": {
     "type": "cartoon",
@@ -50767,7 +50767,7 @@
     "gender": "M",
     "identity": "CM20",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF22SAS": {
     "type": "cartoon",
@@ -50776,7 +50776,7 @@
     "gender": "F",
     "identity": "CF22",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF24SAS": {
     "type": "cartoon",
@@ -50785,7 +50785,7 @@
     "gender": "F",
     "identity": "CF24",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM21SAS": {
     "type": "cartoon",
@@ -50794,7 +50794,7 @@
     "gender": "M",
     "identity": "CM21",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM23SAS": {
     "type": "cartoon",
@@ -50803,7 +50803,7 @@
     "gender": "M",
     "identity": "CM23",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM25SAS": {
     "type": "cartoon",
@@ -50812,7 +50812,7 @@
     "gender": "M",
     "identity": "CM25",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF07SUS": {
     "type": "cartoon",
@@ -50821,7 +50821,7 @@
     "gender": "F",
     "identity": "CF07",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CF09SUS": {
     "type": "cartoon",
@@ -50830,7 +50830,7 @@
     "gender": "F",
     "identity": "CF09",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM06SUS": {
     "type": "cartoon",
@@ -50839,7 +50839,7 @@
     "gender": "M",
     "identity": "CM06",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM08SUS": {
     "type": "cartoon",
@@ -50848,7 +50848,7 @@
     "gender": "M",
     "identity": "CM08",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   },
   "CM10SUS": {
     "type": "cartoon",
@@ -50857,6 +50857,6 @@
     "gender": "M",
     "identity": "CM10",
     "angle": "S",
-    "difficultyScore": 1
+    "difficultyScore": 0
   }
 }
