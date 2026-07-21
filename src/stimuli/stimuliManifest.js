@@ -1,9 +1,10 @@
-import kdefMetadata from './kdefMetadata.json'
+import metadata from './metadata.json'
 
-// When true, only front-facing ("S" / straight) KDEF angles are included in
-// the playable stimulus set. Off-angle images (FL, HL, HR, FR) stay in the
-// repo and in kdefMetadata.json untouched — flip this back to false to bring
-// them back into rotation later.
+// When true, only front-facing ("S" / straight) angles are included in the
+// playable stimulus set. Off-angle KDEF images (FL, HL, HR, FR) stay in the
+// repo and in metadata.json untouched — flip this back to false to bring
+// them back into rotation later. Cartoon images are always angle S so they
+// are unaffected by this flag.
 const FRONT_FACING_ONLY = true
 
 // Emoji shown as fallback if an image file is missing or fails to load
@@ -17,33 +18,40 @@ const EMOTION_EMOJIS = {
     neutral: '😐',
 }
 
-// Auto-discovers every image under src/stimuli/images/{emotion}/
-// To add a new image: drop it into the matching emotion folder.
-// The emotion label is derived from the folder name — no manifest editing needed.
+// Auto-discovers every image under src/stimuli/images/ (KDEF photos)
+// and src/stimuli/cartoons/ (cartoon stimuli).
+// Drop a new image into the matching emotion subfolder and it is included
+// automatically — no manifest editing needed.
+// The emotion label is derived from the folder name (2nd path segment).
 const imageModules = import.meta.glob(
-    './images/**/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}',
+    [
+        './images/**/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}',
+        './cartoons/**/*.{jpg,jpeg,png,webp,JPG,JPEG,PNG,WEBP}',
+    ],
     { eager: true }
 )
 
 export const stimuli = Object.entries(imageModules).map(([path, module]) => {
-    // path shape: './images/happy/AF01HAS.JPG'
+    // path shapes:
+    //   './images/happy/AF01HAS.JPG'   → segments[1]='images',   segments[2]='happy'
+    //   './cartoons/angry/CF02ANS.png' → segments[1]='cartoons', segments[2]='angry'
     const segments = path.split('/')
     const emotion  = segments[2]                                              // folder name = label
     const filename = segments[segments.length - 1].replace(/\.[^.]+$/, '')   // strip extension
 
-    // Look up KDEF metadata by uppercase stem.
-    // Images without an entry (placeholder JPGs, manually added files) get
-    // difficulty: null and are excluded from tier-based sampling but remain
-    // fully playable via the random fallback path.
-    const meta = kdefMetadata[filename.toUpperCase()] ?? null
+    // Look up metadata by uppercase stem. Images without an entry get
+    // difficulty: null and type: null — they remain fully playable via
+    // the random fallback path.
+    const meta = metadata[filename.toUpperCase()] ?? null
 
     return {
         stimulusId: filename,
         emotion,
-        imageSrc: module.default,                                             // resolved URL from Vite
-        emoji: EMOTION_EMOJIS[emotion] ?? '🙂',
-        difficulty: meta?.difficultyTier ?? null,
+        imageSrc:   module.default,                                           // resolved URL from Vite
+        emoji:      EMOTION_EMOJIS[emotion] ?? '🙂',
+        difficulty: meta?.difficultyScore ?? null,
         angle:      meta?.angle ?? null,
+        type:       meta?.type ?? null,                                       // 'kdef' | 'cartoon' | null
     }
 }).filter(({ angle }) => !FRONT_FACING_ONLY || angle === 'S' || angle === null)
 
