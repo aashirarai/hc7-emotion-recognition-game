@@ -50,6 +50,7 @@ One entry per stimulus image, keyed by uppercase filename stem. Covers both KDEF
 | identity | string | Identity prefix, e.g. `AF01` (KDEF) or `CF02` (cartoon) |
 | angle | string | Viewing angle; KDEF: `FL`, `HL`, `S`, `HR`, `FR` — cartoons always `S` |
 | difficultyScore | number (0–1) | Hᵤ score for KDEF images (lower = harder); `1` for all cartoon images |
+| confounding | string / string[] / omitted | Most commonly mis-selected emotion(s) for this KDEF expressor × emotion pair, from Appendix 1 of the KDEF norming study; string for a single confound, array for multiple, omitted where the norming data was `n/a`/`Indistinct` or the image wasn't in the Appendix 1 top-20 list |
 
 ### Difficulty score (Hᵤ)
 The unbiased hit rate (Hᵤ) per expressor × emotion combination, taken from Appendix 2 of the KDEF norming study. Represents the proportion of trials on which participants correctly identified the emotion, corrected for response bias. Values range from 0 (never correctly identified) to 1 (always correctly identified). Lower scores indicate harder stimuli.
@@ -57,6 +58,11 @@ The unbiased hit rate (Hᵤ) per expressor × emotion combination, taken from Ap
 The same score is shared across all viewing angles for a given expressor × emotion pair, since the norming study used front-facing images only.
 
 Source: Goeleven, E., De Raedt, R., Leyman, L., & Verschuere, B. (2008). The Karolinska Directed Emotional Faces: a validation study. *Cognition & Emotion*, 22(6), 1094–1118.
+
+### Confounding emotion(s)
+The most commonly mis-selected non-target emotion(s) for a given expressor × emotion pair, taken from Appendix 1 of the same KDEF norming study (top-20 rated images per emotion). Wording is normalised to match the `emotion` field convention (e.g. `Disgusted` → `disgust`, `Fearful` → `fear`). Where Appendix 1 lists more than one non-target emotion for a pair (slash-separated), all are recorded as a string array. Entries rated `n/a` or `Indistinct` — and images outside the Appendix 1 top-20 — have no `confounding` field.
+
+The same value is shared across all viewing angles and both sessions (A/B) for a given expressor × emotion pair, same as `difficultyScore`.
 
 ### Session-level adaptive state (persisted in `localStorage`)
 Key: `hc7_adaptive_state_v1`
