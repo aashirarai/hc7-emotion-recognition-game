@@ -15,7 +15,7 @@ The schema may change during development, but any changes to logged fields shoul
 | selectedEmotion | string/null | Emotion selected by user |
 | isCorrect | boolean/null | Whether the response was correct |
 | reactionTimeMs | number/null | Time from stimulus onset to response |
-| difficulty | number (0–1) / null / `"unassigned"` | Hᵤ difficulty score from `metadata.json`; `null` for stimuli without KDEF metadata; `"unassigned"` if the field is missing entirely |
+| difficulty | number (0–1) / null / `"unassigned"` | Difficulty score derived from `metadata.json` (see "Stimulus fields" below); 0 = easiest, 1 = hardest; `null` for stimuli without KDEF metadata; `"unassigned"` if the field is missing entirely |
 | mode | string | Current game mode; currently set to `"normal"` as a placeholder |
 | timestamp | string | ISO timestamp recording when the trial log was created |
 
@@ -24,7 +24,7 @@ The schema may change during development, but any changes to logged fields shoul
 |---|---|---|
 | stimulusId | string | Unique identifier for the stimulus (KDEF filename stem, e.g. `AF01ANFL`) |
 | emotion | string | Correct emotion label associated with the stimulus |
-| difficulty | number (0–1) / null | Hᵤ difficulty score from `metadata.json`; 0 = hardest (rarely identified correctly), 1 = easiest; `null` for stimuli without KDEF metadata |
+| difficulty | number (0–1) / null | Difficulty score exposed by `stimuliManifest.js`, taken directly from `difficultyScore` in `metadata.json` (see below); 0 = easiest, 1 = hardest; `null` for stimuli without metadata |
 | angle | string / null | KDEF viewing angle (`FL`, `HL`, `S`, `HR`, `FR`); `null` for non-KDEF stimuli |
 | imageSrc | string/null | Path or imported source for the displayed image stimulus |
 | emoji | string/null | Fallback placeholder display if no image is available |
@@ -49,11 +49,11 @@ One entry per stimulus image, keyed by uppercase filename stem. Covers both KDEF
 | gender | string | `F` (female) or `M` (male) |
 | identity | string | Identity prefix, e.g. `AF01` (KDEF) or `CF02` (cartoon) |
 | angle | string | Viewing angle; KDEF: `FL`, `HL`, `S`, `HR`, `FR` — cartoons always `S` |
-| difficultyScore | number (0–1) | Hᵤ score for KDEF images (lower = harder); `1` for all cartoon images |
+| difficultyScore | number (0–1) | Difficulty score for KDEF images, derived from the Hᵤ hit rate in the norming study (0 = easiest, 1 = hardest — see below); `0` for all cartoon images |
 | confounding | string / string[] / omitted | Most commonly mis-selected emotion(s) for this KDEF expressor × emotion pair, from Appendix 1 of the KDEF norming study; string for a single confound, array for multiple, omitted where the norming data was `n/a`/`Indistinct` or the image wasn't in the Appendix 1 top-20 list |
 
 ### Difficulty score (Hᵤ)
-The unbiased hit rate (Hᵤ) per expressor × emotion combination, taken from Appendix 2 of the KDEF norming study. Represents the proportion of trials on which participants correctly identified the emotion, corrected for response bias. Values range from 0 (never correctly identified) to 1 (always correctly identified). Lower scores indicate harder stimuli.
+`difficultyScore` in `metadata.json` is derived from the unbiased hit rate (Hᵤ) per expressor × emotion combination, taken from Appendix 2 of the KDEF norming study. Hᵤ represents the proportion of trials on which participants correctly identified the emotion, corrected for response bias, and ranges from 0 (never correctly identified) to 1 (always correctly identified). `difficultyScore` is stored as the inverse of Hᵤ, so it follows the game's 0-easiest/1-hardest convention directly — no further transformation is applied when it's exposed as `difficulty` by `stimuliManifest.js`.
 
 The same score is shared across all viewing angles for a given expressor × emotion pair, since the norming study used front-facing images only.
 
@@ -70,7 +70,7 @@ Key: `hc7_adaptive_state_v1`
 | Field | Type | Description |
 |---|---|---|
 | version | number | Schema version, currently `1` |
-| difficultyThreshold | number (0–1) | Upper Hᵤ bound for the current stimulus pool; stimuli with `difficultyScore ≤ threshold` are selected. Lower threshold = harder pool. Starting value TBD after pilot testing. |
+| difficultyThreshold | number (0–1) | Upper bound on the game's `difficulty` field (0 = easiest, 1 = hardest, see "Difficulty score (Hᵤ)" above) for the current stimulus pool; stimuli with `difficulty ≤ threshold` are selected. Higher threshold = harder pool. Starting value TBD after pilot testing. |
 | consecutiveAbove | number | Sessions in a row scoring ≥ 80 (threshold raised on next session) |
 | consecutiveBelow | number | Sessions in a row scoring ≤ 50 (threshold lowered on next session) |
 | history | array | Most recent 20 session records `{ timestamp, sessionId, compositeScore, difficultyThreshold, direction }` |
