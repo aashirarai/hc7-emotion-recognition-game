@@ -6,6 +6,7 @@ export function createTrialLog({
     stimulus,
     selectedEmotion,
     reactionTimeMs,
+    gazeSampleCount = 0
 }) {
     // Check whether the selected answer matches the correct emotion
     const isCorrect = (selectedEmotion === stimulus.emotion)
@@ -28,7 +29,11 @@ export function createTrialLog({
         // Game setting fields
         difficulty: stimulus.difficulty ?? "unassigned",
         mode: "normal",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+
+        // Basic gaze fields
+        gazeSampleCount,
+        gazeDataAvailable: gazeSampleCount > 0
     }
 }
 

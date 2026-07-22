@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import WebcamPreview from "./WebcamPreview";
+// import WebcamPreview from "./WebcamPreview";
 import { startWebGazer, stopWebGazer } from "./webgazerService";
 
 function GazeTestPage({ webcamStream, sessionMetadata }) {
@@ -37,7 +37,8 @@ function GazeTestPage({ webcamStream, sessionMetadata }) {
                 This page is for testing webcam functionality separately from the main emotion-recognition task.
             </p>
 
-            <WebcamPreview stream={webcamStream} large />
+            {/* WebGazer currently provides the debugging webcam preview. */}
+            {/* <WebcamPreview stream={webcamStream} large /> */}
 
             <div className="button-stack">
                 <button
