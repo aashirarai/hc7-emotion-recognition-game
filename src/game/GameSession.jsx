@@ -40,8 +40,8 @@ function GameSession() {
     // Stores which trial the user is currently on
     const [currentTrialIndex, setCurrentTrialIndex] = useState(0)
 
-    // Stores the time when the current trial started, used to calculate reaction time.
-    // A ref rather than state — changing it shouldn't trigger a re-render.
+    // Stores the time when the current trial started, used to calculate reaction time
+    // A ref rather than state — changing it shouldn't trigger a re-render
     const trialStartTime = useRef(null)
 
     // Stores raw gaze predictions for the current trial
@@ -90,7 +90,7 @@ function GameSession() {
         if (trialIsActive) {
             // Start the behavioural reaction time measurement
             // performance.now() gives a high-resolution timestamp
-            setTrialStartTime(performance.now())
+            trialStartTime.current = performance.now()
 
             // Remove samples from the previous trial before the new trial begins
             currentTrialGazeSamplesRef.current = []
