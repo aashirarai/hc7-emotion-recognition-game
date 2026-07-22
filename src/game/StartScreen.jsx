@@ -1,4 +1,6 @@
-function StartScreen({ onStart, participant, previousSessions, onLogout }) {
+import { TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
+
+function StartScreen({ onStart, participant, previousSessions, adaptiveState, onLogout }) {
     const lastSession = previousSessions?.length ? previousSessions[previousSessions.length - 1] : null
 
     return (
@@ -15,6 +17,13 @@ function StartScreen({ onStart, participant, previousSessions, onLogout }) {
                     Not {participant.participantId}?
                 </button>
             </div>
+
+            {adaptiveState && (
+                <p className="score-label" style={{ marginTop: '-0.5rem' }}>
+                    Difficulty tier: {adaptiveState.tierIndex + 1} / {TIER_THRESHOLDS.length}
+                    {' '}({TIER_LABELS[adaptiveState.tierIndex]})
+                </p>
+            )}
 
             {lastSession && (
                 <div className="previous-score">
