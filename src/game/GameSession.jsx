@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 import { requestWebcamPermission } from '../gaze/requestWebcamPermission'
-import WebcamPreview from '../gaze/WebcamPreview'
+import { startWebGazer, stopWebGazer } from '../gaze/webgazerService'
+// import WebcamPreview from '../gaze/WebcamPreview'
 
 import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 import { computeSessionComposite } from '../adaptive/scoring'
@@ -11,7 +12,7 @@ import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
 import FeedbackScreen from './FeedbackScreen'
 
-import GazeTestPage from '../gaze/GazeTestPage'
+// import GazeTestPage from '../gaze/GazeTestPage'
 
 function GameSession() {
     // Tracks whether the user has started the session
@@ -31,7 +32,7 @@ function GameSession() {
     const [webcamStream, setWebcamStream] = useState(null)
 
     // Tracks whether the game has entered gaze test mode
-    const [showGazeTest, setShowGazeTest] = useState(false)
+    // const [showGazeTest, setShowGazeTest] = useState(false)
 
     // Shuffled list of stimuli for the current session, generated on Start
     const [trialSequence, setTrialSequence] = useState([])
@@ -42,6 +43,14 @@ function GameSession() {
     // Stores the time when the current trial started, used to calculate reaction time.
     // A ref rather than state — changing it shouldn't trigger a re-render.
     const trialStartTime = useRef(null)
+
+    // Stores raw gaze predictions for the current trial
+    // useRef is used instead because WebGazer may produce many samples per second
+    // Adding a sample to a ref does not cause the entire GameSession component to re-render
+    const currentTrialGazeSamplesRef = useRef([])
+
+    // Controls whether incoming WebGazer predictions should currently be saved
+    const collectingGazeRef = useRef(false)
 
     // Stores all trial logs from the current session
     const [trialLogs, setTrialLogs] = useState([])
@@ -58,17 +67,48 @@ function GameSession() {
     // Total number of trials
     const totalTrials = trialSequence.length
 
+    // Receives one gaze prediction from WebGazer
+    function handleGazeData(point) {
+        // Ignore predictions outside an active trial
+        if (!collectingGazeRef.current) return
+
+        // Ignore predictions that do not contain usable coordinates
+        if (!point || !Number.isFinite(point.x) || !Number.isFinite(point.y)) {
+            return
+        }
+
+        // Add the valid prediction to the current trial's gaze buffer
+        currentTrialGazeSamplesRef.current.push(point)
+    }
+
     // Start timing each trial when:
     // - the session has started
     // - the user is not on the feedback screen
     // - the session is not complete
     useEffect(() => {
-        if (sessionStarted && !showFeedback && !sessionComplete) {
+        const trialIsActive = sessionStarted && !showFeedback && !sessionComplete
+        if (trialIsActive) {
+            // Start the behavioural reaction time measurement
             // performance.now() gives a high-resolution timestamp
-            trialStartTime.current = performance.now()
-        }
-    }, [sessionStarted, currentTrialIndex, showFeedback, sessionComplete])
+            setTrialStartTime(performance.now())
 
+            // Remove samples from the previous trial before the new trial begins
+            currentTrialGazeSamplesRef.current = []
+
+            // Only collect gaze when WebGazer started successfully
+            collectingGazeRef.current = sessionMetadata?.webgazerStarted === true
+        } else {
+            // Do not collect gaze during feedback or after session completion
+            collectingGazeRef.current = false
+        }
+    }, [sessionStarted, currentTrialIndex, showFeedback, sessionComplete, sessionMetadata])
+
+    // Clean up WebGazer if GameSession is removed from the page.
+    useEffect(() => {
+        return () => {
+            stopWebGazer()
+        }
+    }, [])
     
     // Called when the user chooses how to start the session
     async function handleStart({ webcamRequested }) {
@@ -80,6 +120,7 @@ function GameSession() {
         let webcamEnabled = false
         let webcamPermissionStatus = "not_requested"
         let stream = null
+        let webgazerStarted = false
 
         // Only request browser webcam access if the user chose the webcam option
         if (webcamRequested) {
@@ -88,6 +129,20 @@ function GameSession() {
             webcamEnabled = webcamResult.webcamEnabled
             webcamPermissionStatus = webcamResult.webcamPermissionStatus
             stream = webcamResult.stream
+        }
+
+        // Start WebGazer only if webcam permission was successfully granted
+        if (webcamEnabled) {
+
+            if (stream) {
+                stream.getTracks().forEach((track) => track.stop())
+                stream = null
+            }
+
+            const webgazerResult = await startWebGazer(handleGazeData)
+
+            // Convert the returned WebGazer object into a Boolean
+            webgazerStarted = Boolean(webgazerResult)
         }
 
         setSessionId(newSessionId)
@@ -102,7 +157,8 @@ function GameSession() {
             startedAt: new Date().toISOString(),
             webcamRequested,
             webcamEnabled,
-            webcamPermissionStatus
+            webcamPermissionStatus,
+            webgazerStarted
         })
 
         // Build a fresh shuffled trial sequence for this session
@@ -122,6 +178,12 @@ function GameSession() {
         // Safety check
         if (trialStartTime.current === null || !currentStimulus) return
 
+        // Stop saving gaze prediction at the exact point the answer is selected
+        collectingGazeRef.current = false
+
+        // Record how many valid gaze predictions were collected during this trial
+        const gazeSampleCount = currentTrialGazeSamplesRef.current.length
+
         // Calculate reaction time from trial start to button click
         const reactionTimeMs = Math.round(performance.now() - trialStartTime.current)
 
@@ -131,7 +193,8 @@ function GameSession() {
             trialIndex: currentTrialIndex,
             stimulus: currentStimulus,
             selectedEmotion,
-            reactionTimeMs
+            reactionTimeMs,
+            gazeSampleCount
         })
 
         // Create the updated full session log immediately
@@ -175,7 +238,17 @@ function GameSession() {
     }
 
     // Resets everything and returns to the start screen
-    function handleRestart() {
+    async function handleRestart() {
+        // Stop saving gaze data immediately
+        collectingGazeRef.current = false
+
+        // Clear any samples left in the current trial buffer
+        currentTrialGazeSamplesRef.current = []
+
+        // Stop WebGazer
+        await stopWebGazer()
+
+        // Stop the webcam stream requested by GameSession
         if (webcamStream) {
             webcamStream.getTracks().forEach((track) => track.stop())
         }
@@ -185,7 +258,7 @@ function GameSession() {
         setSessionId(null)
         setSessionMetadata(null)
         setWebcamStream(null)
-        setShowGazeTest(false)
+        // setShowGazeTest(false)
         setCurrentTrialIndex(0)
         setTrialLogs([])
         setLastTrialLog(null)
@@ -232,25 +305,6 @@ function GameSession() {
         )
     }
 
-    // If the user has entered gaze test mode, show testing page
-    if (showGazeTest) {
-    return (
-        <>
-            <button
-                style={{ marginBottom: '1rem' }}
-                onClick={() => setShowGazeTest(false)}
-            >
-                Back to game
-            </button>
-
-            <GazeTestPage
-                webcamStream={webcamStream}
-                sessionMetadata={sessionMetadata}
-            />
-        </>
-    )
-}
-
     // If the user has answered the current trial, show feedback
     if (showFeedback && lastTrialLog) {
         return (
@@ -265,16 +319,7 @@ function GameSession() {
     // Otherwise, show the active trial
     return (
     <>
-        <WebcamPreview stream={webcamStream} />
-
-        {webcamStream && (
-            <button
-                style={{ marginBottom: '1rem' }}
-                onClick={() => setShowGazeTest(true)}
-            >
-                Open gaze test
-            </button>
-        )}
+        {/**<WebcamPreview stream={webcamStream} />**/}
 
         <TrialScreen
             stimulus={currentStimulus}

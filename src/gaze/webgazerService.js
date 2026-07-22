@@ -17,7 +17,7 @@ export async function startWebGazer(onGazeData) {
 
         webgazer
             .setGazeListener((data, elapsedTime) => {
-                console.log("WebGazer raw data:", data)
+                // console.log("WebGazer raw data:", data)
 
                 if (!data) return
 
@@ -42,10 +42,37 @@ export async function startWebGazer(onGazeData) {
     }
 }
 
-export function stopWebGazer() {
+export async function stopWebGazer() {
     if (!webgazerInstance) return
 
-    webgazerInstance.clearGazeListener()
-    webgazerInstance.end()
-    webgazerInstance = null
+    const webgazer = webgazerInstance
+
+    // Stop gaze predictions
+    webgazer.clearGazeListener()
+
+    // WebGazer attaches its camera stream to this video element
+    const videoElement = document.getElementById("webgazerVideoFeed")
+    const videoStream = videoElement?.srcObject
+
+    // Explicitly stop every camera track in that stream
+    if (videoStream) {
+        videoStream.getTracks().forEach((track) => {
+            track.stop()
+        })
+
+        // Disconnect the stopped stream from the video element
+        videoElement.srcObject = null
+    }
+
+    // Hide WebGazer's debugging interface
+    webgazer.showPredictionPoints(false)
+    webgazer.showFaceFeedbackBox(false)
+    webgazer.showFaceOverlay(false)
+    webgazer.showVideo(false)
+
+    try {
+        await webgazer.end()
+    } finally {
+        webgazerInstance = null
+    }
 }
