@@ -7,16 +7,19 @@ import { startWebGazer, stopWebGazer } from '../gaze/webgazerService'
 
 import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 import { computeSessionComposite } from '../adaptive/scoring'
+import { addSessionResult } from '../data/participantStore'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
 import FeedbackScreen from './FeedbackScreen'
 
-// import GazeTestPage from '../gaze/GazeTestPage'
-
-function GameSession() {
+function GameSession({ participant, onLogout }) {
     // Tracks whether the user has started the session
     const [sessionStarted, setSessionStarted] = useState(false)
+
+    // This participant's past session results, shown on the start screen
+    // and appended to whenever a new session finishes
+    const [sessionHistory, setSessionHistory] = useState(participant.sessions ?? [])
 
     // Tracks whether all trials have been completed
     const [sessionComplete, setSessionComplete] = useState(false)
@@ -112,8 +115,11 @@ function GameSession() {
     
     // Called when the user chooses how to start the session
     async function handleStart({ webcamRequested }) {
-        // Create a new pseudonymous sesion ID
-        const newSessionId = createSessionId()
+        // Create a new pseudonymous sesion ID, scoped to this participant
+        setSessionId(createSessionId(participant.participantId))
+
+        // Build a fresh shuffled trial sequence for this session
+        setTrialSequence(buildTrialSequence(stimuli, 10))
 
         // Default webcam values
         // These are used if the user starts without webcam
@@ -160,6 +166,10 @@ function GameSession() {
             webcamPermissionStatus,
             webgazerStarted
         })
+    // Called when the user clicks "Start"
+    function handleStart() {
+        // Create a new pseudonymous sesion ID, scoped to this participant
+        setSessionId(createSessionId(participant.participantId))
 
         // Build a fresh shuffled trial sequence for this session
         setTrialSequence(buildTrialSequence(stimuli, 10))
@@ -189,6 +199,7 @@ function GameSession() {
 
         // Create a structured trial log
         const log = createTrialLog({
+            participantId: participant.participantId,
             sessionId,
             trialIndex: currentTrialIndex,
             stimulus: currentStimulus,
@@ -223,6 +234,18 @@ function GameSession() {
             // End the session
             setSessionComplete(true)
             setShowFeedback(false)
+
+            // Save this session's composite result to the participant's history
+            const composite = computeSessionComposite(trialLogs)
+            const updatedHistory = addSessionResult(participant.participantId, {
+                sessionId,
+                compositeScore: composite.compositeScore,
+                accuracyScore: composite.accuracyScore,
+                correctCount: composite.correctCount,
+                totalTrials: composite.totalTrials,
+                meanReactionTimeMs: composite.meanReactionTimeMs,
+            })
+            setSessionHistory(updatedHistory)
 
             console.log('Session logs:', trialLogs)
 
@@ -269,7 +292,14 @@ function GameSession() {
 
     // If the session has not started, show the start screen
     if (!sessionStarted) {
-        return <StartScreen onStart={handleStart} />
+        return (
+            <StartScreen
+                onStart={handleStart}
+                participant={participant}
+                previousSessions={sessionHistory}
+                onLogout={onLogout}
+            />
+        )
     }
 
     // If all trials are complete, show the session summary
@@ -329,6 +359,6 @@ function GameSession() {
         />
     </>
     )
-}
+}}
 
 export default GameSession

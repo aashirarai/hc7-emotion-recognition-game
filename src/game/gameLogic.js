@@ -1,6 +1,7 @@
 // Creates one trial log object after the user selects an answer
 // Keeps the data format consistent with docs/data-schema.md
 export function createTrialLog({
+    participantId,
     sessionId,
     trialIndex,
     stimulus,
@@ -15,7 +16,8 @@ export function createTrialLog({
     // This object will be used for data export, dashboard summaries,
     // adaptive difficulty, and gaze metrics
     return {
-        // Session/trial ID
+        // Participant/session/trial ID
+        participantId,
         sessionId,
         trialId: trialIndex + 1,
 
@@ -37,10 +39,10 @@ export function createTrialLog({
     }
 }
 
-// Creates a simple pseudonymous session ID
+// Creates a simple pseudonymous session ID, scoped to the logged-in participant
 // Date.now() gives a unique timestamp-based number
-export function createSessionId() {
-    return `session_${Date.now()}`
+export function createSessionId(participantId) {
+    return `${participantId}_${Date.now()}`
 }
 
 // Returns a shuffled copy of the stimuli array for one session.

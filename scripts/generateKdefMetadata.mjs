@@ -8,7 +8,7 @@
  *   1. Walks every identity subfolder inside the KDEF root (e.g. AF01/, BM22/).
  *   2. Parses each filename using the standard KDEF naming convention.
  *   3. Copies matched images into src/stimuli/images/{emotion}/ (keeps original filename, uppercased).
- *   4. Writes src/stimuli/kdefMetadata.json keyed by filename stem.
+ *   4. Writes/merges src/stimuli/metadata.json keyed by filename stem.
  *   5. Prints a coverage table so you can spot gaps before committing.
  *
  * The existing placeholder images in src/stimuli/images/ are NOT deleted.
@@ -34,25 +34,19 @@ import { fileURLToPath } from 'node:url'
 const SCRIPT_DIR  = fileURLToPath(new URL('.', import.meta.url))
 const PROJECT_ROOT = resolve(SCRIPT_DIR, '..')
 const IMAGES_DIR   = join(PROJECT_ROOT, 'src', 'stimuli', 'images')
-const METADATA_OUT = join(PROJECT_ROOT, 'src', 'stimuli', 'kdefMetadata.json')
+const METADATA_OUT = join(PROJECT_ROOT, 'src', 'stimuli', 'metadata.json')
 
-// ─── Difficulty tiers (Wang et al. 2024 + standard literature placement) ─────
-//
-//  Tier 1 – Easiest  : happy, neutral   (near-ceiling in child recognition studies)
-//  Tier 2 – Easy     : surprise         (distinctive wide-eyes/open-mouth cues)
-//  Tier 3 – Moderate : disgust, sad     (both frequently confused with each other
-//                                        and with neutral in child samples)
-//  Tier 4 – Hard     : fear             (confused with surprise)
-//  Tier 5 – Hardest  : angry            (lowest child recognition accuracy in literature)
-
+// KDEF expression codes → emotion label.
+// difficultyScore is set to null here; the per-expressor Hᵤ scores are
+// populated separately by running the Excel ingestion script after this one.
 const EMOTION_META = {
-    HA: { emotion: 'happy',    difficultyTier: 1 },
-    NE: { emotion: 'neutral',  difficultyTier: 1 },
-    SU: { emotion: 'surprise', difficultyTier: 2 },
-    DI: { emotion: 'disgust',  difficultyTier: 3 },
-    SA: { emotion: 'sad',      difficultyTier: 3 },
-    AF: { emotion: 'fear',     difficultyTier: 4 },
-    AN: { emotion: 'angry',    difficultyTier: 5 },
+    HA: { emotion: 'happy'    },
+    NE: { emotion: 'neutral'  },
+    SU: { emotion: 'surprise' },
+    DI: { emotion: 'disgust'  },
+    SA: { emotion: 'sad'      },
+    AF: { emotion: 'fear'     },
+    AN: { emotion: 'angry'    },
 }
 
 const VALID_ANGLES = ['FL', 'HL', 'S', 'HR', 'FR']
@@ -116,7 +110,7 @@ async function main() {
             }
 
             const [, session, gender, identity, expressionCode, angleCode] = match
-            const { emotion, difficultyTier } = EMOTION_META[expressionCode.toUpperCase()]
+            const { emotion } = EMOTION_META[expressionCode.toUpperCase()]
 
             // Create destination directory if needed
             const destDir = join(IMAGES_DIR, emotion)
@@ -131,13 +125,14 @@ async function main() {
 
             // Record metadata entry keyed by uppercase stem
             metadata[stem] = {
+                type: 'kdef',
                 emotion,
                 kdefCode: expressionCode.toUpperCase(),
                 session,
                 gender,
                 identity: `${session}${gender}${identity}`,
                 angle: angleCode.toUpperCase(),
-                difficultyTier,
+                difficultyScore: null,   // populated by the Hᵤ ingestion script
             }
 
             // Update coverage table
@@ -153,7 +148,7 @@ async function main() {
 
     console.log('')
     console.log(`✓  Processed : ${processed} images`)
-    console.log(`✓  Metadata  : src/stimuli/kdefMetadata.json`)
+    console.log(`✓  Metadata  : src/stimuli/metadata.json`)
     if (overwritten > 0) {
         console.log(`⚠  Overwritten ${overwritten} existing files (re-run is safe)`)
     }
@@ -174,47 +169,28 @@ async function main() {
     const divider = '─'.repeat(62)
     console.log('Coverage (images per expression × angle):')
     console.log(divider)
-    console.log(`  Code  Emotion       Tier   ${VALID_ANGLES.map(a => pad(a, COL)).join('')}   Total`)
+    console.log(`  Code  Emotion        ${VALID_ANGLES.map(a => pad(a, COL)).join('')}   Total`)
     console.log(divider)
 
-    const tierTotals = { 1: 0, 2: 0, 3: 0, 4: 0, 5: 0 }
-
-    for (const [code, { emotion, difficultyTier }] of Object.entries(EMOTION_META)) {
+    for (const [code, { emotion }] of Object.entries(EMOTION_META)) {
         const angleCounts = VALID_ANGLES.map(a => coverage[code][a])
         const total = angleCounts.reduce((s, n) => s + n, 0)
-        tierTotals[difficultyTier] += total
         const zeroFlag = total === 0 ? ' ← ⚠ NO IMAGES' : ''
         console.log(
-            `  ${padL(code, 4)}  ${padL(emotion, 12)}  T${difficultyTier}   ` +
+            `  ${padL(code, 4)}  ${padL(emotion, 12)} ` +
             `${angleCounts.map(n => pad(n, COL)).join('')}   ${pad(total, 5)}${zeroFlag}`
         )
     }
 
     console.log(divider)
     console.log('')
-    console.log('Tier totals (images available for adaptive sampling):')
-
-    const TIER_LABELS = {
-        1: 'Easiest  (happy, neutral)',
-        2: 'Easy     (surprise)',
-        3: 'Moderate (disgust, sad)',
-        4: 'Hard     (fear)',
-        5: 'Hardest  (angry)',
-    }
-
-    for (const tier of [1, 2, 3, 4, 5]) {
-        const n    = tierTotals[tier]
-        const warn = n === 0 ? '  ← ⚠ EMPTY — adaptive sampling will widen to adjacent tier' : ''
-        console.log(`  Tier ${tier}  ${padL(TIER_LABELS[tier], 30)}  ${pad(n, 6)} images${warn}`)
-    }
-
-    console.log('')
     console.log('Next steps:')
-    console.log('  1. Check the table above — every tier should have > 0 images.')
-    console.log('  2. Commit src/stimuli/kdefMetadata.json and the new image files.')
-    console.log('  3. Optionally delete the old placeholder images (angry_1.jpg etc.).')
+    console.log('  1. Check the table above — every emotion should have > 0 images.')
+    console.log('  2. Run the Hᵤ ingestion script to populate difficultyScore values.')
+    console.log('  3. Commit src/stimuli/metadata.json and the new image files.')
+    console.log('  4. Optionally delete the old placeholder images (angry_1.jpg etc.).')
     console.log('     The game remains playable with them present (they get difficulty: null')
-    console.log('     and fall through to random sampling, bypassing tier selection).')
+    console.log('     and fall through to random sampling).')
     console.log('')
 }
 
