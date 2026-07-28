@@ -1,17 +1,20 @@
-// Client-side participant "login" store, backed by localStorage.
+// Client-side participant data access, backed by the API server in `server/`.
 //
-// This is NOT a security mechanism — there is no server, so a determined
-// user can read localStorage directly. The 4-digit PIN exists only to stop
-// a participant from accidentally loading a different child's profile on a
-// shared device, not to authenticate them. Do not treat this as protecting
-// sensitive data.
+// The server verifies the PIN and issues a bearer token per login (see
+// server/src/auth.js). This module caches that token in memory, keyed by
+// participantId, so callers can keep passing just a participantId (matching
+// the old localStorage-backed signatures) without threading the token through
+// every call site. Like the participant object held in App.jsx's React
+// state, this cache lives only in the page's JS memory — never localStorage
+// — and is lost on reload, so a reload always requires logging in again.
 import { createDefaultAdaptiveState } from '../adaptive/tierEngine'
 
-const STORAGE_KEY = 'hc7_participants_v1'
-const MAX_SESSION_HISTORY = 20
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:3001'
 
 const PARTICIPANT_ID_PATTERN = /^[A-Z0-9_-]{2,20}$/
 const PIN_PATTERN = /^\d{4}$/
+
+const tokensByParticipantId = new Map()
 
 export function normalizeParticipantId(rawId) {
     return rawId.trim().toUpperCase()
@@ -25,42 +28,30 @@ export function isValidPin(pin) {
     return PIN_PATTERN.test(pin)
 }
 
-// SHA-256 hash of the PIN, hex-encoded. Requires a secure context
-// (localhost or https), which Vite dev/preview and any real deployment satisfy.
-async function hashPin(pin) {
-    const bytes = new TextEncoder().encode(pin)
-    const digest = await crypto.subtle.digest('SHA-256', bytes)
-    return Array.from(new Uint8Array(digest))
-        .map((byte) => byte.toString(16).padStart(2, '0'))
-        .join('')
-}
+async function apiFetch(path, { token, ...options } = {}) {
+    const response = await fetch(`${API_BASE_URL}${path}`, {
+        ...options,
+        headers: {
+            'Content-Type': 'application/json',
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+            ...(options.headers ?? {}),
+        },
+    })
 
-function loadStore() {
+    let data = null
     try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        return raw ? JSON.parse(raw) : {}
+        data = await response.json()
     } catch {
-        return {}
+        // No JSON body (e.g. an empty response) — leave data as null.
     }
-}
 
-function saveStore(store) {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(store))
-}
-
-function toPublicParticipant(participantId, record) {
-    return {
-        participantId,
-        createdAt: record.createdAt,
-        sessions: record.sessions,
-        adaptiveState: record.adaptiveState ?? createDefaultAdaptiveState(),
-    }
+    return { ok: response.ok, status: response.status, data }
 }
 
 // Attempts to log in an existing participant, or registers a new one if the
 // ID hasn't been used before. Returns:
 //   { ok: true, participant, isNew }
-//   { ok: false, error: 'invalid_id' | 'invalid_pin' | 'wrong_pin' }
+//   { ok: false, error: 'invalid_id' | 'invalid_pin' | 'wrong_pin' | 'network_error' }
 export async function loginOrRegister(rawParticipantId, pin) {
     const participantId = normalizeParticipantId(rawParticipantId ?? '')
 
@@ -71,64 +62,103 @@ export async function loginOrRegister(rawParticipantId, pin) {
         return { ok: false, error: 'invalid_pin' }
     }
 
-    const store = loadStore()
-    const existing = store[participantId]
-    const pinHash = await hashPin(pin)
-
-    if (existing) {
-        if (existing.pinHash !== pinHash) {
-            return { ok: false, error: 'wrong_pin' }
-        }
-        return { ok: true, isNew: false, participant: toPublicParticipant(participantId, existing) }
+    let response
+    try {
+        response = await apiFetch('/api/participants/login', {
+            method: 'POST',
+            body: JSON.stringify({ participantId, pin }),
+        })
+    } catch {
+        return { ok: false, error: 'network_error' }
     }
 
-    const record = {
-        pinHash,
-        createdAt: new Date().toISOString(),
-        sessions: [],
-        adaptiveState: createDefaultAdaptiveState(),
+    if (!response.ok || !response.data?.ok) {
+        return { ok: false, error: response.data?.error ?? 'network_error' }
     }
-    store[participantId] = record
-    saveStore(store)
 
-    return { ok: true, isNew: true, participant: toPublicParticipant(participantId, record) }
+    tokensByParticipantId.set(participantId, response.data.token)
+
+    return { ok: true, isNew: response.data.isNew, participant: response.data.participant }
 }
 
 // Appends a completed session summary to the participant's history and
-// returns the updated (capped) sessions array.
-export function addSessionResult(participantId, summary) {
-    const store = loadStore()
-    const record = store[participantId]
-    if (!record) return []
+// returns the updated (capped) sessions array. Returns [] on failure (no
+// token cached, or a network/server error) so callers can treat it the same
+// as "nothing to show" rather than crashing.
+export async function addSessionResult(participantId, summary) {
+    const token = tokensByParticipantId.get(participantId)
+    if (!token) return []
 
-    const entry = { ...summary, timestamp: new Date().toISOString() }
-    record.sessions = [...record.sessions, entry].slice(-MAX_SESSION_HISTORY)
-    store[participantId] = record
-    saveStore(store)
-
-    return record.sessions
+    try {
+        const { ok, data } = await apiFetch(`/api/participants/${participantId}/sessions`, {
+            method: 'POST',
+            token,
+            body: JSON.stringify(summary),
+        })
+        return ok ? data : []
+    } catch {
+        return []
+    }
 }
 
-export function getParticipantSessions(participantId) {
-    const store = loadStore()
-    return store[participantId]?.sessions ?? []
+export async function getParticipantSessions(participantId) {
+    const token = tokensByParticipantId.get(participantId)
+    if (!token) return []
+
+    try {
+        const { ok, data } = await apiFetch(`/api/participants/${participantId}/sessions`, { token })
+        return ok ? data : []
+    } catch {
+        return []
+    }
 }
 
-export function getAdaptiveState(participantId) {
-    const store = loadStore()
-    return store[participantId]?.adaptiveState ?? createDefaultAdaptiveState()
+export async function getAdaptiveState(participantId) {
+    const token = tokensByParticipantId.get(participantId)
+    if (!token) return createDefaultAdaptiveState()
+
+    try {
+        const { ok, data } = await apiFetch(`/api/participants/${participantId}/adaptive-state`, { token })
+        return ok ? data : createDefaultAdaptiveState()
+    } catch {
+        return createDefaultAdaptiveState()
+    }
 }
 
 // Persists the next adaptive state for a participant and returns it.
-// Returns null if the participant doesn't exist (mirrors addSessionResult).
-export function updateAdaptiveState(participantId, nextAdaptiveState) {
-    const store = loadStore()
-    const record = store[participantId]
-    if (!record) return null
+// Returns null on failure (mirrors the old "participant doesn't exist" case).
+export async function updateAdaptiveState(participantId, nextAdaptiveState) {
+    const token = tokensByParticipantId.get(participantId)
+    if (!token) return null
 
-    record.adaptiveState = nextAdaptiveState
-    store[participantId] = record
-    saveStore(store)
+    try {
+        const { ok, data } = await apiFetch(`/api/participants/${participantId}/adaptive-state`, {
+            method: 'PUT',
+            token,
+            body: JSON.stringify(nextAdaptiveState),
+        })
+        return ok ? data : null
+    } catch {
+        return null
+    }
+}
 
-    return record.adaptiveState
+// Batch-saves one session's trial-level logs. Returns { ok: false } on
+// failure rather than throwing — trial logs are a secondary record of a
+// session that has already been summarised via addSessionResult, so a
+// failure here shouldn't block the player from seeing their results.
+export async function saveTrialLogs(participantId, sessionId, logs) {
+    const token = tokensByParticipantId.get(participantId)
+    if (!token) return { ok: false }
+
+    try {
+        const { ok, data } = await apiFetch(`/api/participants/${participantId}/trials`, {
+            method: 'POST',
+            token,
+            body: JSON.stringify({ sessionId, logs }),
+        })
+        return ok ? data : { ok: false }
+    } catch {
+        return { ok: false }
+    }
 }

@@ -5,6 +5,7 @@ const ERROR_MESSAGES = {
     invalid_id: 'Participant ID must be 2-20 letters or numbers.',
     invalid_pin: 'PIN must be exactly 4 digits.',
     wrong_pin: "That PIN doesn't match this participant ID.",
+    network_error: "Couldn't reach the server. Check your connection and try again.",
 }
 
 function LoginScreen({ onLogin }) {

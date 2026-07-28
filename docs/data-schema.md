@@ -64,10 +64,12 @@ The most commonly mis-selected non-target emotion(s) for a given expressor × em
 
 The same value is shared across all viewing angles and both sessions (A/B) for a given expressor × emotion pair, same as `difficultyScore`.
 
-### Adaptive tier state (per participant, persisted in `localStorage`)
-Stored as the `adaptiveState` field on each participant record in
-`hc7_participants_v1` (see "Participant store" below) — not a separate global
-key. Implemented in `src/adaptive/tierEngine.js`.
+### Adaptive tier state (per participant, persisted server-side)
+Stored in the `adaptive_state` SQLite table (see "Backend / API" below), one
+row per participant, keyed by `participant_id`. The tier-transition logic
+itself is implemented in `src/adaptive/tierEngine.js` and stays on the
+frontend — the server only stores whatever state the client sends via
+`PUT /api/participants/:id/adaptive-state`.
 
 The game divides the stimulus pool into 5 cumulative difficulty tiers, each
 defined by a ceiling on the `difficulty` field (0 = easiest, 1 = hardest, see
@@ -105,23 +107,27 @@ Computed after each session in `src/adaptive/scoring.js`.
 ## Participant login fields
 
 Participants "log in" with a self-chosen participant ID and 4-digit PIN so
-the game can find their previous results on the same browser/device. **This
-is an identification convenience, not authentication** — there is no server,
-so the PIN cannot stop someone with access to the browser's storage from
-reading another participant's data. It only guards against accidentally
-loading the wrong child's profile on a shared device.
+the game can find their previous results on a different browser/device. The
+PIN is verified server-side against a salted hash — see "Backend / API"
+below for the access-control scheme. This is still a lightweight scheme
+appropriate for a non-diagnostic research prototype, not a general-purpose
+auth system: there are no password-reset flows, rate limiting, or per-teacher
+accounts.
 
-### Participant store (persisted in `localStorage`)
-Key: `hc7_participants_v1`
-
-One entry per participant, keyed by `participantId`:
+### Participant store (persisted in SQLite, `server/data.sqlite`)
+Table: `participants`, one row per participant, keyed by `participant_id`:
 
 | Field | Type | Description |
 |---|---|---|
-| pinHash | string | SHA-256 hex digest of the 4-digit PIN (not stored in plain text) |
-| createdAt | string | ISO timestamp of first login/registration |
-| sessions | array | Up to the most recent 20 session summaries, see below |
-| adaptiveState | object | This participant's adaptive difficulty tier state, see "Adaptive tier state" above |
+| participant_id | string | Participant identifier entered at login (normalised to uppercase) |
+| pin_hash | string | scrypt hash of the 4-digit PIN, hex-encoded (not stored in plain text) |
+| pin_salt | string | Random salt used for `pin_hash`, hex-encoded, unique per participant |
+| created_at | string | ISO timestamp of first login/registration |
+
+Session summaries and adaptive tier state are stored in separate tables
+(`sessions`, `adaptive_state`) rather than nested under the participant row —
+see "Adaptive tier state" above and "Session-level composite score" below for
+their field shapes, and "Backend / API" for the table definitions.
 
 ### Session summary (per entry in `sessions`)
 | Field | Type | Description |
@@ -140,6 +146,39 @@ point in the code (end of session, in `GameSession.jsx`) but serve different
 purposes — `sessions` is the full session-summary log, while adaptive
 `history` additionally records the tier and promote/demote/none direction
 that resulted from each session's score.
+
+## Backend / API
+
+Participant, session, adaptive-state, and trial-level data are persisted by
+a standalone Express + SQLite server in `server/` (not part of the Vite
+frontend — see README "Running locally"). Trial logs, which previously only
+existed in React state during a session and as an optional CSV download, are
+now written server-side at the end of each session via `POST
+/api/participants/:id/trials`.
+
+### Access control
+- `POST /api/participants/login` verifies the PIN against the salted scrypt
+  hash in `participants.pin_hash`/`pin_salt` and, on success, issues a random
+  opaque bearer token (`auth_tokens` table: `token`, `participant_id`,
+  `expires_at`; 24h TTL).
+- All other participant-scoped endpoints require `Authorization: Bearer
+  <token>` for a token belonging to that same `:id` — one participant's
+  token cannot read or write another participant's data.
+- Dashboard endpoints require an `x-admin-key` header matching the
+  `ADMIN_API_KEY` environment variable (`server/.env`) — there are no
+  per-teacher accounts at this prototype scale.
+
+### Endpoints
+| Method & path | Purpose | Auth |
+|---|---|---|
+| `POST /api/participants/login` | Register-or-login by ID+PIN; returns `{ participant, token }` | none (this *is* the auth step) |
+| `GET /api/participants/:id/sessions` | Session summary history (last 20) | participant token |
+| `GET /api/participants/:id/adaptive-state` | Current adaptive tier state | participant token |
+| `PUT /api/participants/:id/adaptive-state` | Update adaptive tier state after a session | participant token |
+| `POST /api/participants/:id/sessions` | Append one session summary | participant token |
+| `POST /api/participants/:id/trials` | Batch-insert a session's trial logs | participant token |
+| `GET /api/dashboard/participants` | All participants + latest score/tier | admin key |
+| `GET /api/dashboard/participants/:id` | Full session + trial-log detail for one participant | admin key |
 
 ## Gaze estimation fields
 | Field | Type | Description |

@@ -1,0 +1,19 @@
+{
+  "name": "hc7-emotion-recognition-server",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "API server for participant data (login, sessions, trial logs, dashboard).",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=22.5.0"
+  }
+}
