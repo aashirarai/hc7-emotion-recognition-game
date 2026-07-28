@@ -2,9 +2,10 @@ import { useEffect, useRef, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 
-import { buildTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
+import { buildAdaptiveTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 import { computeSessionComposite } from '../adaptive/scoring'
-import { addSessionResult } from '../data/participantStore'
+import { applyAdaptiveUpdate, TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
+import { addSessionResult, getAdaptiveState, updateAdaptiveState } from '../data/participantStore'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -17,6 +18,13 @@ function GameSession({ participant, onLogout }) {
     // This participant's past session results, shown on the start screen
     // and appended to whenever a new session finishes
     const [sessionHistory, setSessionHistory] = useState(participant.sessions ?? [])
+
+    // This participant's adaptive difficulty tier, read at login and updated
+    // after each session finishes. Tier changes only take effect at the
+    // start of the *next* session — no mid-session jumps.
+    const [adaptiveState, setAdaptiveState] = useState(
+        () => participant.adaptiveState ?? getAdaptiveState(participant.participantId)
+    )
 
     // Tracks whether all trials have been completed
     const [sessionComplete, setSessionComplete] = useState(false)
@@ -66,8 +74,9 @@ function GameSession({ participant, onLogout }) {
         // Create a new pseudonymous sesion ID, scoped to this participant
         setSessionId(createSessionId(participant.participantId))
 
-        // Build a fresh shuffled trial sequence for this session
-        setTrialSequence(buildTrialSequence(stimuli, 10))
+        // Build a fresh shuffled trial sequence, restricted to the stimulus
+        // pool unlocked for this participant's current difficulty tier
+        setTrialSequence(buildAdaptiveTrialSequence(stimuli, 10, adaptiveState.tierIndex))
 
         // Reset all game state
         setSessionStarted(true)
@@ -135,6 +144,15 @@ function GameSession({ participant, onLogout }) {
             })
             setSessionHistory(updatedHistory)
 
+            // Update this participant's adaptive difficulty tier based on
+            // how this session went, and persist it for the next session
+            const nextAdaptiveState = applyAdaptiveUpdate(adaptiveState, {
+                sessionId,
+                compositeScore: composite.compositeScore,
+            })
+            updateAdaptiveState(participant.participantId, nextAdaptiveState)
+            setAdaptiveState(nextAdaptiveState)
+
             console.log('Session logs:', trialLogs)
 
             return
@@ -168,6 +186,7 @@ function GameSession({ participant, onLogout }) {
                 onStart={handleStart}
                 participant={participant}
                 previousSessions={sessionHistory}
+                adaptiveState={adaptiveState}
                 onLogout={onLogout}
             />
         )
@@ -191,6 +210,16 @@ function GameSession({ participant, onLogout }) {
                 <div>
                     <div className="score-value">{meanReactionTimeMs} ms</div>
                     <p className="score-label">average response time</p>
+                </div>
+                <div>
+                    <div className="score-value">
+                        {adaptiveState.tierIndex + 1} / {TIER_THRESHOLDS.length}
+                    </div>
+                    <p className="score-label">
+                        difficulty tier ({TIER_LABELS[adaptiveState.tierIndex]})
+                        {adaptiveState.history.at(-1)?.direction === 'promote' && ' — promoted!'}
+                        {adaptiveState.history.at(-1)?.direction === 'demote' && ' — demoted'}
+                    </p>
                 </div>
                 <details>
                     <summary>View trial logs</summary>

@@ -5,6 +5,8 @@
 // a participant from accidentally loading a different child's profile on a
 // shared device, not to authenticate them. Do not treat this as protecting
 // sensitive data.
+import { createDefaultAdaptiveState } from '../adaptive/tierEngine'
+
 const STORAGE_KEY = 'hc7_participants_v1'
 const MAX_SESSION_HISTORY = 20
 
@@ -51,6 +53,7 @@ function toPublicParticipant(participantId, record) {
         participantId,
         createdAt: record.createdAt,
         sessions: record.sessions,
+        adaptiveState: record.adaptiveState ?? createDefaultAdaptiveState(),
     }
 }
 
@@ -79,7 +82,12 @@ export async function loginOrRegister(rawParticipantId, pin) {
         return { ok: true, isNew: false, participant: toPublicParticipant(participantId, existing) }
     }
 
-    const record = { pinHash, createdAt: new Date().toISOString(), sessions: [] }
+    const record = {
+        pinHash,
+        createdAt: new Date().toISOString(),
+        sessions: [],
+        adaptiveState: createDefaultAdaptiveState(),
+    }
     store[participantId] = record
     saveStore(store)
 
@@ -104,4 +112,23 @@ export function addSessionResult(participantId, summary) {
 export function getParticipantSessions(participantId) {
     const store = loadStore()
     return store[participantId]?.sessions ?? []
+}
+
+export function getAdaptiveState(participantId) {
+    const store = loadStore()
+    return store[participantId]?.adaptiveState ?? createDefaultAdaptiveState()
+}
+
+// Persists the next adaptive state for a participant and returns it.
+// Returns null if the participant doesn't exist (mirrors addSessionResult).
+export function updateAdaptiveState(participantId, nextAdaptiveState) {
+    const store = loadStore()
+    const record = store[participantId]
+    if (!record) return null
+
+    record.adaptiveState = nextAdaptiveState
+    store[participantId] = record
+    saveStore(store)
+
+    return record.adaptiveState
 }

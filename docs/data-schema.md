@@ -64,19 +64,36 @@ The most commonly mis-selected non-target emotion(s) for a given expressor × em
 
 The same value is shared across all viewing angles and both sessions (A/B) for a given expressor × emotion pair, same as `difficultyScore`.
 
-### Session-level adaptive state (persisted in `localStorage`)
-Key: `hc7_adaptive_state_v1`
+### Adaptive tier state (per participant, persisted in `localStorage`)
+Stored as the `adaptiveState` field on each participant record in
+`hc7_participants_v1` (see "Participant store" below) — not a separate global
+key. Implemented in `src/adaptive/tierEngine.js`.
+
+The game divides the stimulus pool into 5 cumulative difficulty tiers, each
+defined by a ceiling on the `difficulty` field (0 = easiest, 1 = hardest, see
+"Difficulty score (Hᵤ)" above): a tier's pool is every stimulus with
+`difficulty ≤ TIER_THRESHOLDS[tierIndex]`, so easier stimuli stay in rotation
+alongside newly-unlocked harder ones. Thresholds (`TIER_THRESHOLDS` in
+`tierEngine.js`): `[0.17, 0.33, 0.48, 0.68, 1.00]` — starting values, computed
+from the decile spread of KDEF `difficultyScore`s, retune after pilot testing.
+
+New participants start at tier 0. Tier changes are evaluated once per
+completed session and take effect at the start of the *next* session (no
+mid-session jumps): two consecutive sessions scoring ≥ 80 promote one tier;
+two consecutive sessions scoring ≤ 50 demote one tier; scores in the 51–79
+dead zone reset both streak counters without changing the tier. Tier is
+clamped to `[0, 4]`.
 
 | Field | Type | Description |
 |---|---|---|
 | version | number | Schema version, currently `1` |
-| difficultyThreshold | number (0–1) | Upper bound on the game's `difficulty` field (0 = easiest, 1 = hardest, see "Difficulty score (Hᵤ)" above) for the current stimulus pool; stimuli with `difficulty ≤ threshold` are selected. Higher threshold = harder pool. Starting value TBD after pilot testing. |
-| consecutiveAbove | number | Sessions in a row scoring ≥ 80 (threshold raised on next session) |
-| consecutiveBelow | number | Sessions in a row scoring ≤ 50 (threshold lowered on next session) |
-| history | array | Most recent 20 session records `{ timestamp, sessionId, compositeScore, difficultyThreshold, direction }` |
+| tierIndex | number (0–4) | Current difficulty tier; higher = harder cumulative pool |
+| consecutiveAbove | number | Sessions in a row scoring ≥ 80 (tier promoted at 2) |
+| consecutiveBelow | number | Sessions in a row scoring ≤ 50 (tier demoted at 2) |
+| history | array | Most recent 20 session records `{ timestamp, sessionId, compositeScore, tierIndex, direction }`, where `direction` is `"promote"`, `"demote"`, or `"none"` |
 
 ### Session-level composite score
-Computed after each session in `src/adaptive/scoring.js` (not yet implemented).
+Computed after each session in `src/adaptive/scoring.js`.
 
 | Field | Type | Description |
 |---|---|---|
@@ -104,6 +121,7 @@ One entry per participant, keyed by `participantId`:
 | pinHash | string | SHA-256 hex digest of the 4-digit PIN (not stored in plain text) |
 | createdAt | string | ISO timestamp of first login/registration |
 | sessions | array | Up to the most recent 20 session summaries, see below |
+| adaptiveState | object | This participant's adaptive difficulty tier state, see "Adaptive tier state" above |
 
 ### Session summary (per entry in `sessions`)
 | Field | Type | Description |
@@ -116,10 +134,12 @@ One entry per participant, keyed by `participantId`:
 | meanReactionTimeMs | number | Mean reaction time across all trials in the session |
 | timestamp | string | ISO timestamp recording when the session finished |
 
-Note: this session-summary history is what the adaptive difficulty module's
-`history` field (see below) is expected to read from once per-participant
-adaptive state is implemented — currently `hc7_adaptive_state_v1` is a single
-global key and is not yet participant-scoped.
+Note: this `sessions` array and the adaptive tier state's own `history` array
+(see "Adaptive tier state" above) are separate lists updated at the same
+point in the code (end of session, in `GameSession.jsx`) but serve different
+purposes — `sessions` is the full session-summary log, while adaptive
+`history` additionally records the tier and promote/demote/none direction
+that resulted from each session's score.
 
 ## Gaze estimation fields
 | Field | Type | Description |

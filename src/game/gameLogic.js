@@ -1,3 +1,5 @@
+import { getPoolForTier } from '../adaptive/tierEngine'
+
 // Creates one trial log object after the user selects an answer
 // Keeps the data format consistent with docs/data-schema.md
 export function createTrialLog({
@@ -46,6 +48,13 @@ export function createSessionId(participantId) {
 export function buildTrialSequence(stimuli, count = null) {
     const shuffled = [...stimuli].sort(() => Math.random() - 0.5)
     return count !== null ? shuffled.slice(0, count) : shuffled
+}
+
+// Same as buildTrialSequence, but restricted to the stimulus pool unlocked
+// for the participant's current adaptive difficulty tier.
+export function buildAdaptiveTrialSequence(stimuli, count, tierIndex) {
+    const pool = getPoolForTier(stimuli, tierIndex)
+    return buildTrialSequence(pool, count)
 }
 
 // Converts the trial logs array into CSV text
