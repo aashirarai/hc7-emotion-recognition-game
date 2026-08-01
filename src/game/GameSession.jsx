@@ -5,7 +5,7 @@ import { stimuli } from '../stimuli/stimuliManifest'
 import { buildAdaptiveTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 import { computeSessionComposite } from '../adaptive/scoring'
 import { applyAdaptiveUpdate, TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
-import { addSessionResult, getAdaptiveState, updateAdaptiveState } from '../data/participantStore'
+import { addSessionResult, getAdaptiveState, saveTrialLogs, updateAdaptiveState } from '../data/participantStore'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -123,7 +123,7 @@ function GameSession({ participant, onLogout }) {
     }
 
     // Called when the user clicks "Next" or "Finish"
-    function handleNext() {
+    async function handleNext() {
         // Check whether the current trial is the final one
         const isFinalTrial = (currentTrialIndex === totalTrials - 1)
 
@@ -134,7 +134,7 @@ function GameSession({ participant, onLogout }) {
 
             // Save this session's composite result to the participant's history
             const composite = computeSessionComposite(trialLogs)
-            const updatedHistory = addSessionResult(participant.participantId, {
+            const updatedHistory = await addSessionResult(participant.participantId, {
                 sessionId,
                 compositeScore: composite.compositeScore,
                 accuracyScore: composite.accuracyScore,
@@ -144,13 +144,16 @@ function GameSession({ participant, onLogout }) {
             })
             setSessionHistory(updatedHistory)
 
+            // Persist this session's full trial-level logs
+            await saveTrialLogs(participant.participantId, sessionId, trialLogs)
+
             // Update this participant's adaptive difficulty tier based on
             // how this session went, and persist it for the next session
             const nextAdaptiveState = applyAdaptiveUpdate(adaptiveState, {
                 sessionId,
                 compositeScore: composite.compositeScore,
             })
-            updateAdaptiveState(participant.participantId, nextAdaptiveState)
+            await updateAdaptiveState(participant.participantId, nextAdaptiveState)
             setAdaptiveState(nextAdaptiveState)
 
             console.log('Session logs:', trialLogs)
