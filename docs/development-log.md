@@ -35,7 +35,7 @@ Adaptive difficulty and gaze estimation fields will be added once those modules 
 
 ### Decision
 
-Add a participant login screen (participant ID + 4-digit PIN) as a prerequisite for adaptive difficulty. Participants self-register on first use — there is no researcher-side pre-issued ID list. Data is stored client-side in `localStorage` (`hc7_participants_v1`), with the PIN hashed (SHA-256) rather than stored in plain text.
+Add a participant login screen (participant ID + 4-digit PIN) as a prerequisite for adaptive difficulty. Currently, participants self-register on first use, where they decide their own ID. Data is stored client-side in `localStorage` (`hc7_participants_v1`), with the PIN hashed (SHA-256) rather than stored in plain text.
 
 ### Reason
 
@@ -47,3 +47,26 @@ Adaptive difficulty and "show my previous results" both require the game to know
 - Session composite scores are saved to the participant's history (`sessions`, capped at 20) on session completion, and the start screen shows the most recent one.
 - Next: scope `hc7_adaptive_state_v1` per participant (currently still global) so the adaptive difficulty module can read/write per-child state.
 - If the game later needs to run across multiple devices for the same participant, this login flow will need to move to a real backend — the current approach will not carry over automatically.
+
+
+## 28/07/2026
+
+### Decision
+
+Add a standalone Node/Express + SQLite backend (`server/`) and move all participant data off `localStorage`: participant records, session summaries, and adaptive tier state now live in SQLite tables, and trial-level logs (previously never persisted — only held in React state and an optional manual CSV download) are now written server-side at the end of each session.
+
+Access control: `POST /api/participants/login` verifies the PIN server-side against a salted hash (`crypto.scryptSync`, per-participant salt) and issues an opaque bearer token (24h TTL). All participant-scoped writes require `Authorization: Bearer <token>` matching that participant's ID. A separate admin key (`x-admin-key`, checked against `ADMIN_API_KEY`) gates the new dashboard read endpoints.
+
+The SQLite driver is Node's built-in `node:sqlite` (`DatabaseSync`), not `better-sqlite3` as originally planned — `better-sqlite3`'s native build failed on the dev machine (no Visual Studio Build Tools for node-gyp). `node:sqlite` gives the same synchronous prepared-statement API with no native compilation step, at the cost of requiring Node 22.5+.
+
+### Reason
+
+This closes the gap flagged in the 14/07/2026 entry: `localStorage` never let a participant be recognised on a different device, and blocked the planned teacher dashboard (`src/dashboard/`) since trial-level data was never persisted anywhere. A real server also meant the old unsalted-SHA-256, no-server PIN check was no longer just a UX nicety — once data crosses the network, something has to stop one client writing/reading another participant's data, hence the bearer-token + admin-key scheme above.
+
+### Impact / Next step
+
+- `src/data/participantStore.js` keeps its previous exported function signatures (`loginOrRegister`, `addSessionResult`, `getParticipantSessions`, `getAdaptiveState`, `updateAdaptiveState`) but now calls the API; it caches each participant's bearer token in an in-memory `Map` (set at login) so callers don't need to thread the token through every call. New export: `saveTrialLogs(participantId, sessionId, logs)`.
+- `GameSession.jsx`'s `handleNext` is now `async` (fetch calls can't be sync like the old localStorage reads) and calls `saveTrialLogs` alongside the existing `addSessionResult` call at session end.
+- Running locally is now two processes — `server/` (`npm run dev`, port 3001) and the existing Vite frontend — documented in `README.md`. `VITE_API_BASE_URL` (repo-root `.env`, defaults to `http://localhost:3001`) points the frontend at the API.
+- Verified end-to-end with a Playwright-driven browser session (register → play 10 trials → summary screen) and by querying `GET /api/dashboard/participants/:id` to confirm the session summary and all 10 trial-log rows landed in `server/data.sqlite`.
+- Next: no deployment/hosting config yet (local dev only, per current scope). `src/dashboard/` (teacher-facing views) can now be built against the `GET /api/dashboard/*` endpoints, which were added for exactly that purpose but aren't consumed anywhere yet.
