@@ -70,3 +70,26 @@ This closes the gap flagged in the 14/07/2026 entry: `localStorage` never let a 
 - Running locally is now two processes — `server/` (`npm run dev`, port 3001) and the existing Vite frontend — documented in `README.md`. `VITE_API_BASE_URL` (repo-root `.env`, defaults to `http://localhost:3001`) points the frontend at the API.
 - Verified end-to-end with a Playwright-driven browser session (register → play 10 trials → summary screen) and by querying `GET /api/dashboard/participants/:id` to confirm the session summary and all 10 trial-log rows landed in `server/data.sqlite`.
 - Next: no deployment/hosting config yet (local dev only, per current scope). `src/dashboard/` (teacher-facing views) can now be built against the `GET /api/dashboard/*` endpoints, which were added for exactly that purpose but aren't consumed anywhere yet.
+
+
+## 04/08/2026
+
+### Decision
+
+Build `src/dashboard/` out as a guardian/parent-facing progress dashboard, gated behind a new role-picker landing screen (`RoleSelectScreen`) that forks the app into the existing student flow or a new guardian flow. Guardians get their own identity system, entirely separate from participant PINs: `POST /api/guardians/signup` verifies the child's *current* PIN read-only (proving the guardian legitimately knows it) but never rewrites `participants.pin_hash`/`pin_salt` — it then creates a fully independent guardian account (its own ID + password, `guardians` + `guardian_auth_tokens` tables) for dashboard access. `GET /api/guardians/me/dashboard` returns the full (uncapped) session history plus a server-computed 7×7 emotion confusion matrix. Charts (`AccuracyChart`, `ResponseTimeChart`, `TierProgressionChart`) use Recharts — the first UI dependency in this frontend beyond `react`/`react-dom`.
+
+### Reason
+
+The original ask described guardian sign-up setting "a new PIN" that would replace the child's, but `participants.pin_hash` is the same field the child's game login checks — overwriting it at guardian signup would lock the child out of the game itself, not just the dashboard. Verify-then-create-separate-account gets the "prove you know the child's PIN" gatekeeping without that side effect. This was flagged to the user as a deviation from the literal original spec rather than assumed silently.
+
+Hand-rolled SVG charts (matching this frontend's zero-dependency-beyond-React posture, and the backend's raw-SQL-no-ORM style) were the initial plan, but the user opted for a chart library once the tradeoff was raised — Recharts was faster to build against and is actively maintained (its 2.x line is deprecated, so this went straight to 3.x).
+
+### Impact / Next step
+
+- New tables: `guardians` (`guardian_id` PK, non-unique `participant_id` FK — so two guardians can independently link to one child, e.g. both parents), `guardian_auth_tokens` (kept separate from `auth_tokens` rather than adding a type discriminator, matching this schema's existing preference for explicit tables over polymorphic ones).
+- `requireGuardianAuth` derives `guardianId`/`participantId` entirely from the bearer token — unlike `requireParticipantAuth`, there's no client-supplied URL `:id` to cross-check, so there's nothing to spoof.
+- Confusion matrix emotion order is a hardcoded `EMOTIONS` array in `server/src/routes/guardians.js`, manually duplicated from `emotionOptions` in `src/stiuli/stimuliManifest.js` (that file uses `import.meta.glob`, Vite-only, so it can't be imported into the standalone Node server) — a manual-sync point if the 7 emotions ever change.
+- Guardian dashboard's session list is uncapped, but `adaptive_state.history_json` (where per-session `tierIndex` is looked up from) is still capped at 20 entries, so participants with >20 sessions show `tierIndex: null` for older sessions in the tier chart — a pre-existing limitation of the adaptive-state history, not fixed here.
+- Verified via direct API calls (register/login/session/trial posts, then guardian signup/login/dashboard fetches) against the already-running dev server, cross-checked against `server/data.sqlite` directly: wrong-PIN and unknown-participant signup errors, duplicate/second-guardian signup, login success/failure (collapsed to one `invalid_credentials` error), and the returned confusion matrix and per-session `tierIndex` values matched hand-posted trial data exactly. Confirmed `pin_hash`/`pin_salt` byte-for-byte unchanged after guardian signup. `npm run lint` and `npm run build` both pass.
+- Not yet verified: an actual browser click-through of the role picker → guardian signup form → rendered dashboard/charts — no browser automation tooling was available in that session. Needs a manual pass before this is considered fully done.
+- Next: no rate-limiting anywhere in this codebase (pre-existing gap, now also applies to `/api/guardians/signup`'s PIN check); no password-reset flow for guardians; guardian dashboard is read-only, no way yet for a guardian to unlink or remove their account.

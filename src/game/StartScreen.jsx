@@ -14,7 +14,7 @@ function StartScreen({ onStart, participant, previousSessions, adaptiveState, on
                     </p>
                 </div>
                 <button className="btn-link" onClick={onLogout}>
-                    Not {participant.participantId}?
+                    Log out
                 </button>
             </div>
 

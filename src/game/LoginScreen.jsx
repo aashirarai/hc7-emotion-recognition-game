@@ -37,7 +37,7 @@ function LoginScreen({ onLogin }) {
                 <h1>Welcome</h1>
                 <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
                     Enter your participant ID and PIN to continue. First time here?
-                    Make up an ID and a 4-digit PIN — use the same ones next time
+                    Make up an ID and a 4-digit PIN. Use the same ones next time
                     to see your past results.
                 </p>
             </div>

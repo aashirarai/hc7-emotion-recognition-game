@@ -32,6 +32,7 @@ import participantsRouter from './routes/participants.js'
 import sessionsRouter from './routes/sessions.js'
 import trialsRouter from './routes/trials.js'
 import dashboardRouter from './routes/dashboard.js'
+import guardiansRouter from './routes/guardians.js'
 
 const PORT = process.env.PORT ?? 3001
 
@@ -43,6 +44,7 @@ app.use('/api/participants', participantsRouter)
 app.use('/api/participants', sessionsRouter)
 app.use('/api/participants', trialsRouter)
 app.use('/api/dashboard', dashboardRouter)
+app.use('/api/guardians', guardiansRouter)
 
 app.listen(PORT, () => {
     console.log(`API server listening on http://localhost:${PORT}`)

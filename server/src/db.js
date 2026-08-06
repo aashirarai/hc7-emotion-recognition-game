@@ -76,8 +76,24 @@ db.exec(`
         timestamp TEXT NOT NULL
     );
 
+    CREATE TABLE IF NOT EXISTS guardians (
+        guardian_id TEXT PRIMARY KEY,
+        participant_id TEXT NOT NULL REFERENCES participants(participant_id),
+        password_hash TEXT NOT NULL,
+        password_salt TEXT NOT NULL,
+        created_at TEXT NOT NULL
+    );
+
+    CREATE TABLE IF NOT EXISTS guardian_auth_tokens (
+        token TEXT PRIMARY KEY,
+        guardian_id TEXT NOT NULL REFERENCES guardians(guardian_id),
+        expires_at TEXT NOT NULL
+    );
+
     CREATE INDEX IF NOT EXISTS idx_auth_tokens_participant ON auth_tokens(participant_id);
     CREATE INDEX IF NOT EXISTS idx_sessions_participant ON sessions(participant_id);
     CREATE INDEX IF NOT EXISTS idx_trial_logs_participant ON trial_logs(participant_id);
     CREATE INDEX IF NOT EXISTS idx_trial_logs_session ON trial_logs(session_id);
+    CREATE INDEX IF NOT EXISTS idx_guardians_participant ON guardians(participant_id);
+    CREATE INDEX IF NOT EXISTS idx_guardian_auth_tokens_guardian ON guardian_auth_tokens(guardian_id);
 `)
