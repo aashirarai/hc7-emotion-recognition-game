@@ -14,7 +14,7 @@ The core game must remain usable without webcam access, adaptive difficulty, or 
 - Multiple-choice emotion labelling task
 - Trial-level performance logging
 - CSV export
-- Teacher-facing dashboard summaries (accuracy, RT, confusions)
+- Guardian/parent-facing dashboard summaries (accuracy, RT, tier progression, confusions)
 - Adaptive difficulty module, with an intended machine-learning-based component
 - Optional webcam gaze estimation module
 - Coarse AOI-based attention proxies
@@ -25,6 +25,7 @@ The core game must remain usable without webcam access, adaptive difficulty, or 
 - React
 - Javascript
 - CSS
+- Recharts (guardian dashboard charts)
 - Node.js / Express (API server)
 - SQLite (participant data store)
 

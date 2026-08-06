@@ -248,3 +248,82 @@ pre {
   border-radius: 10px;
   font-size: 0.78rem;
 }
+
+/* ─── Role picker ─── */
+.role-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+/* ─── Guardian dashboard: session table ─── */
+.session-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.session-table th,
+.session-table td {
+  text-align: left;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1.5px solid var(--border);
+  white-space: nowrap;
+}
+
+.session-table th {
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+/* ─── Guardian dashboard: charts ─── */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1.5rem;
+}
+
+.chart-svg {
+  overflow: visible;
+}
+
+/* ─── Guardian dashboard: confusion matrix ─── */
+.confusion-grid {
+  display: grid;
+  gap: 2px;
+  overflow-x: auto;
+}
+
+.confusion-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.25rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: var(--text);
+  text-align: center;
+}
+
+.confusion-header {
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.72rem;
+  text-transform: capitalize;
+  font-weight: 600;
+}
+
+.confusion-corner {
+  background: transparent;
+}
+
+.confusion-diagonal {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  font-weight: 700;
+}
