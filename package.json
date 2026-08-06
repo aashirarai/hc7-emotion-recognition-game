@@ -4,8 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "predev": "kill-port 3001 5173",
     "dev": "concurrently -n web,api -c blue,green \"vite\" \"npm run dev --prefix server\"",
+    "kill-port": "kill-port 3001 5173",
     "dev:web": "vite",
     "dev:server": "npm run dev --prefix server",
     "build": "vite build",
