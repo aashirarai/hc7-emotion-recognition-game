@@ -64,19 +64,38 @@ The most commonly mis-selected non-target emotion(s) for a given expressor × em
 
 The same value is shared across all viewing angles and both sessions (A/B) for a given expressor × emotion pair, same as `difficultyScore`.
 
-### Session-level adaptive state (persisted in `localStorage`)
-Key: `hc7_adaptive_state_v1`
+### Adaptive tier state (per participant, persisted server-side)
+Stored in the `adaptive_state` SQLite table (see "Backend / API" below), one
+row per participant, keyed by `participant_id`. The tier-transition logic
+itself is implemented in `src/adaptive/tierEngine.js` and stays on the
+frontend — the server only stores whatever state the client sends via
+`PUT /api/participants/:id/adaptive-state`.
+
+The game divides the stimulus pool into 5 cumulative difficulty tiers, each
+defined by a ceiling on the `difficulty` field (0 = easiest, 1 = hardest, see
+"Difficulty score (Hᵤ)" above): a tier's pool is every stimulus with
+`difficulty ≤ TIER_THRESHOLDS[tierIndex]`, so easier stimuli stay in rotation
+alongside newly-unlocked harder ones. Thresholds (`TIER_THRESHOLDS` in
+`tierEngine.js`): `[0.17, 0.33, 0.48, 0.68, 1.00]` — starting values, computed
+from the decile spread of KDEF `difficultyScore`s, retune after pilot testing.
+
+New participants start at tier 0. Tier changes are evaluated once per
+completed session and take effect at the start of the *next* session (no
+mid-session jumps): two consecutive sessions scoring ≥ 80 promote one tier;
+two consecutive sessions scoring ≤ 50 demote one tier; scores in the 51–79
+dead zone reset both streak counters without changing the tier. Tier is
+clamped to `[0, 4]`.
 
 | Field | Type | Description |
 |---|---|---|
 | version | number | Schema version, currently `1` |
-| difficultyThreshold | number (0–1) | Upper bound on the game's `difficulty` field (0 = easiest, 1 = hardest, see "Difficulty score (Hᵤ)" above) for the current stimulus pool; stimuli with `difficulty ≤ threshold` are selected. Higher threshold = harder pool. Starting value TBD after pilot testing. |
-| consecutiveAbove | number | Sessions in a row scoring ≥ 80 (threshold raised on next session) |
-| consecutiveBelow | number | Sessions in a row scoring ≤ 50 (threshold lowered on next session) |
-| history | array | Most recent 20 session records `{ timestamp, sessionId, compositeScore, difficultyThreshold, direction }` |
+| tierIndex | number (0–4) | Current difficulty tier; higher = harder cumulative pool |
+| consecutiveAbove | number | Sessions in a row scoring ≥ 80 (tier promoted at 2) |
+| consecutiveBelow | number | Sessions in a row scoring ≤ 50 (tier demoted at 2) |
+| history | array | Most recent 20 session records `{ timestamp, sessionId, compositeScore, tierIndex, direction }`, where `direction` is `"promote"`, `"demote"`, or `"none"` |
 
 ### Session-level composite score
-Computed after each session in `src/adaptive/scoring.js` (not yet implemented).
+Computed after each session in `src/adaptive/scoring.js`.
 
 | Field | Type | Description |
 |---|---|---|
@@ -88,22 +107,27 @@ Computed after each session in `src/adaptive/scoring.js` (not yet implemented).
 ## Participant login fields
 
 Participants "log in" with a self-chosen participant ID and 4-digit PIN so
-the game can find their previous results on the same browser/device. **This
-is an identification convenience, not authentication** — there is no server,
-so the PIN cannot stop someone with access to the browser's storage from
-reading another participant's data. It only guards against accidentally
-loading the wrong child's profile on a shared device.
+the game can find their previous results on a different browser/device. The
+PIN is verified server-side against a salted hash — see "Backend / API"
+below for the access-control scheme. This is still a lightweight scheme
+appropriate for a non-diagnostic research prototype, not a general-purpose
+auth system: there are no password-reset flows, rate limiting, or per-teacher
+accounts.
 
-### Participant store (persisted in `localStorage`)
-Key: `hc7_participants_v1`
-
-One entry per participant, keyed by `participantId`:
+### Participant store (persisted in SQLite, `server/data.sqlite`)
+Table: `participants`, one row per participant, keyed by `participant_id`:
 
 | Field | Type | Description |
 |---|---|---|
-| pinHash | string | SHA-256 hex digest of the 4-digit PIN (not stored in plain text) |
-| createdAt | string | ISO timestamp of first login/registration |
-| sessions | array | Up to the most recent 20 session summaries, see below |
+| participant_id | string | Participant identifier entered at login (normalised to uppercase) |
+| pin_hash | string | scrypt hash of the 4-digit PIN, hex-encoded (not stored in plain text) |
+| pin_salt | string | Random salt used for `pin_hash`, hex-encoded, unique per participant |
+| created_at | string | ISO timestamp of first login/registration |
+
+Session summaries and adaptive tier state are stored in separate tables
+(`sessions`, `adaptive_state`) rather than nested under the participant row —
+see "Adaptive tier state" above and "Session-level composite score" below for
+their field shapes, and "Backend / API" for the table definitions.
 
 ### Session summary (per entry in `sessions`)
 | Field | Type | Description |
@@ -116,10 +140,105 @@ One entry per participant, keyed by `participantId`:
 | meanReactionTimeMs | number | Mean reaction time across all trials in the session |
 | timestamp | string | ISO timestamp recording when the session finished |
 
-Note: this session-summary history is what the adaptive difficulty module's
-`history` field (see below) is expected to read from once per-participant
-adaptive state is implemented — currently `hc7_adaptive_state_v1` is a single
-global key and is not yet participant-scoped.
+Note: this `sessions` array and the adaptive tier state's own `history` array
+(see "Adaptive tier state" above) are separate lists updated at the same
+point in the code (end of session, in `GameSession.jsx`) but serve different
+purposes — `sessions` is the full session-summary log, while adaptive
+`history` additionally records the tier and promote/demote/none direction
+that resulted from each session's score.
+
+### Guardian store (persisted in SQLite, `server/data.sqlite`)
+
+Guardians (parents/carers) can sign up for a read-only dashboard of a
+participant's progress. Guardian accounts are entirely separate from the
+child's game login: signup verifies the child's *current* PIN (a read-only
+check, proving the guardian legitimately knows it) but never rewrites
+`participants.pin_hash`/`pin_salt` — the child's PIN and game login are
+completely unaffected by guardian signup. A guardian account has its own ID
+(an email-shaped handle) and password, hashed the same way as participant
+PINs (see "Access control" below).
+
+Table: `guardians`, one row per guardian account, keyed by `guardian_id`:
+
+| Field | Type | Description |
+|---|---|---|
+| guardian_id | string | Self-chosen login handle (email-shaped), lowercased |
+| participant_id | string | The linked participant (`participants.participant_id`); not unique — multiple guardians (e.g. both parents) can independently link to the same child |
+| password_hash | string | scrypt hash of the guardian's password, hex-encoded |
+| password_salt | string | Random salt used for `password_hash`, hex-encoded, unique per guardian |
+| created_at | string | ISO timestamp of account creation |
+
+Guardian bearer tokens are stored in a separate `guardian_auth_tokens` table
+(`token`, `guardian_id`, `expires_at`) rather than reusing `auth_tokens` with
+a type discriminator, so foreign-key targets stay unambiguous — matching this
+schema's existing preference for explicit separate tables (`sessions` vs
+`adaptive_state`) over polymorphic ones.
+
+### Confusion matrix (guardian dashboard)
+
+Returned by `GET /api/guardians/me/dashboard` as `confusionMatrix`:
+
+| Field | Type | Description |
+|---|---|---|
+| emotions | string[] | The 7 emotion labels, in a fixed order (row/column order for `matrix`) |
+| matrix | number[][] | Dense 7×7 grid; `matrix[i][j]` = count of trials where the correct emotion was `emotions[i]` and the selected emotion was `emotions[j]`. Diagonal = correct answers |
+| totalTrials | number | Total answered trials (`selected_emotion IS NOT NULL`) summed across the grid |
+
+Built server-side from a `GROUP BY correct_emotion, selected_emotion` query
+over `trial_logs`, reshaped in JS into the dense zero-filled grid (SQLite has
+no pivot). The emotion order is a hardcoded `EMOTIONS` array in
+`server/src/routes/guardians.js`, duplicated from `emotionOptions` in
+`src/stimuli/stimuliManifest.js` — that file relies on `import.meta.glob`
+(Vite-only), so it can't be imported from the standalone Node server. Keep
+the two lists in sync manually if the 7 emotions ever change.
+
+## Backend / API
+
+Participant, session, adaptive-state, and trial-level data are persisted by
+a standalone Express + SQLite server in `server/` (not part of the Vite
+frontend — see README "Running locally"). Trial logs, which previously only
+existed in React state during a session and as an optional CSV download, are
+now written server-side at the end of each session via `POST
+/api/participants/:id/trials`.
+
+### Access control
+- `POST /api/participants/login` verifies the PIN against the salted scrypt
+  hash in `participants.pin_hash`/`pin_salt` and, on success, issues a random
+  opaque bearer token (`auth_tokens` table: `token`, `participant_id`,
+  `expires_at`; 24h TTL).
+- All other participant-scoped endpoints require `Authorization: Bearer
+  <token>` for a token belonging to that same `:id` — one participant's
+  token cannot read or write another participant's data.
+- Dashboard endpoints require an `x-admin-key` header matching the
+  `ADMIN_API_KEY` environment variable (`server/.env`) — there are no
+  per-teacher accounts at this prototype scale.
+- `POST /api/guardians/signup` verifies the child's PIN (read-only, does not
+  overwrite it) and, on success, hashes the guardian's own password with the
+  same scrypt scheme as participant PINs and issues a guardian bearer token
+  (`guardian_auth_tokens` table; same 24h TTL as participant tokens).
+  `POST /api/guardians/login` verifies guardian ID + password and issues a
+  fresh token the same way.
+- All other guardian endpoints require `Authorization: Bearer <token>` for a
+  valid guardian token. Unlike participant auth, there's no URL `:id` param
+  to check against — the guardian's identity and linked `participantId` are
+  derived entirely from the token, so there's no client-supplied ID a caller
+  could spoof to read another guardian's participant.
+
+### Endpoints
+| Method & path | Purpose | Auth |
+|---|---|---|
+| `POST /api/participants/login` | Register-or-login by ID+PIN; returns `{ participant, token }` | none (this *is* the auth step) |
+| `GET /api/participants/:id/sessions` | Session summary history (last 20) | participant token |
+| `GET /api/participants/:id/adaptive-state` | Current adaptive tier state | participant token |
+| `PUT /api/participants/:id/adaptive-state` | Update adaptive tier state after a session | participant token |
+| `POST /api/participants/:id/sessions` | Append one session summary | participant token |
+| `POST /api/participants/:id/trials` | Batch-insert a session's trial logs | participant token |
+| `GET /api/dashboard/participants` | All participants + latest score/tier | admin key |
+| `GET /api/dashboard/participants/:id` | Full session + trial-log detail for one participant | admin key |
+| `POST /api/guardians/signup` | Verify child's PIN (read-only) and create a guardian account; returns `{ guardianId, participantId, token }` | none (this *is* the auth step) |
+| `POST /api/guardians/login` | Log in with guardian ID + password; returns `{ guardianId, participantId, token }` | none (this *is* the auth step) |
+| `GET /api/guardians/me` | Guardian identity + linked `participantId` | guardian token |
+| `GET /api/guardians/me/dashboard` | Full session history + confusion matrix for the linked participant | guardian token |
 
 ## Gaze estimation fields
 | Field | Type | Description |

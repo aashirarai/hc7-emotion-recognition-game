@@ -5,6 +5,7 @@ const ERROR_MESSAGES = {
     invalid_id: 'Participant ID must be 2-20 letters or numbers.',
     invalid_pin: 'PIN must be exactly 4 digits.',
     wrong_pin: "That PIN doesn't match this participant ID.",
+    network_error: "Couldn't reach the server. Check your connection and try again.",
 }
 
 function LoginScreen({ onLogin }) {
@@ -36,7 +37,7 @@ function LoginScreen({ onLogin }) {
                 <h1>Welcome</h1>
                 <p style={{ marginTop: '0.5rem', color: 'var(--text-muted)' }}>
                     Enter your participant ID and PIN to continue. First time here?
-                    Make up an ID and a 4-digit PIN — use the same ones next time
+                    Make up an ID and a 4-digit PIN. Use the same ones next time
                     to see your past results.
                 </p>
             </div>

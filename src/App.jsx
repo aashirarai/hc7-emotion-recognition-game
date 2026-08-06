@@ -3,20 +3,46 @@ import { useState } from 'react'
 // Import the main game session component
 import GameSession from './game/GameSession'
 import LoginScreen from './game/LoginScreen'
+import RoleSelectScreen from './RoleSelectScreen'
+import GuardianAuthScreen from './dashboard/GuardianAuthScreen'
+import GuardianDashboard from './dashboard/GuardianDashboard'
+import { clearGuardianSession } from './data/guardianStore'
 
 function App() {
+    // 'student' or 'guardian' fork, or null while on the role picker
+    const [role, setRole] = useState(null)
+
     // The logged-in participant, or null if no one is logged in yet
     const [participant, setParticipant] = useState(null)
 
-    return (
-        <main className="app">
-            {participant ? (
-                <GameSession participant={participant} onLogout={() => setParticipant(null)} />
-            ) : (
-                <LoginScreen onLogin={setParticipant} />
-            )}
-        </main>
-    )
+    // The signed-in guardian, or null if not signed in yet
+    const [guardian, setGuardian] = useState(null)
+
+    function handleBackToRoleSelect() {
+        setParticipant(null)
+        setGuardian(null)
+        clearGuardianSession()
+        setRole(null)
+    }
+
+    let content
+    if (!role) {
+        content = <RoleSelectScreen onSelectRole={setRole} />
+    } else if (role === 'student') {
+        content = participant ? (
+            <GameSession participant={participant} onLogout={handleBackToRoleSelect} />
+        ) : (
+            <LoginScreen onLogin={setParticipant} />
+        )
+    } else {
+        content = guardian ? (
+            <GuardianDashboard guardian={guardian} onLogout={handleBackToRoleSelect} />
+        ) : (
+            <GuardianAuthScreen onAuth={setGuardian} onBack={handleBackToRoleSelect} />
+        )
+    }
+
+    return <main className="app">{content}</main>
 }
 
 export default App
