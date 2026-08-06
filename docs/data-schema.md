@@ -147,6 +147,51 @@ purposes — `sessions` is the full session-summary log, while adaptive
 `history` additionally records the tier and promote/demote/none direction
 that resulted from each session's score.
 
+### Guardian store (persisted in SQLite, `server/data.sqlite`)
+
+Guardians (parents/carers) can sign up for a read-only dashboard of a
+participant's progress. Guardian accounts are entirely separate from the
+child's game login: signup verifies the child's *current* PIN (a read-only
+check, proving the guardian legitimately knows it) but never rewrites
+`participants.pin_hash`/`pin_salt` — the child's PIN and game login are
+completely unaffected by guardian signup. A guardian account has its own ID
+(an email-shaped handle) and password, hashed the same way as participant
+PINs (see "Access control" below).
+
+Table: `guardians`, one row per guardian account, keyed by `guardian_id`:
+
+| Field | Type | Description |
+|---|---|---|
+| guardian_id | string | Self-chosen login handle (email-shaped), lowercased |
+| participant_id | string | The linked participant (`participants.participant_id`); not unique — multiple guardians (e.g. both parents) can independently link to the same child |
+| password_hash | string | scrypt hash of the guardian's password, hex-encoded |
+| password_salt | string | Random salt used for `password_hash`, hex-encoded, unique per guardian |
+| created_at | string | ISO timestamp of account creation |
+
+Guardian bearer tokens are stored in a separate `guardian_auth_tokens` table
+(`token`, `guardian_id`, `expires_at`) rather than reusing `auth_tokens` with
+a type discriminator, so foreign-key targets stay unambiguous — matching this
+schema's existing preference for explicit separate tables (`sessions` vs
+`adaptive_state`) over polymorphic ones.
+
+### Confusion matrix (guardian dashboard)
+
+Returned by `GET /api/guardians/me/dashboard` as `confusionMatrix`:
+
+| Field | Type | Description |
+|---|---|---|
+| emotions | string[] | The 7 emotion labels, in a fixed order (row/column order for `matrix`) |
+| matrix | number[][] | Dense 7×7 grid; `matrix[i][j]` = count of trials where the correct emotion was `emotions[i]` and the selected emotion was `emotions[j]`. Diagonal = correct answers |
+| totalTrials | number | Total answered trials (`selected_emotion IS NOT NULL`) summed across the grid |
+
+Built server-side from a `GROUP BY correct_emotion, selected_emotion` query
+over `trial_logs`, reshaped in JS into the dense zero-filled grid (SQLite has
+no pivot). The emotion order is a hardcoded `EMOTIONS` array in
+`server/src/routes/guardians.js`, duplicated from `emotionOptions` in
+`src/stimuli/stimuliManifest.js` — that file relies on `import.meta.glob`
+(Vite-only), so it can't be imported from the standalone Node server. Keep
+the two lists in sync manually if the 7 emotions ever change.
+
 ## Backend / API
 
 Participant, session, adaptive-state, and trial-level data are persisted by
@@ -167,6 +212,17 @@ now written server-side at the end of each session via `POST
 - Dashboard endpoints require an `x-admin-key` header matching the
   `ADMIN_API_KEY` environment variable (`server/.env`) — there are no
   per-teacher accounts at this prototype scale.
+- `POST /api/guardians/signup` verifies the child's PIN (read-only, does not
+  overwrite it) and, on success, hashes the guardian's own password with the
+  same scrypt scheme as participant PINs and issues a guardian bearer token
+  (`guardian_auth_tokens` table; same 24h TTL as participant tokens).
+  `POST /api/guardians/login` verifies guardian ID + password and issues a
+  fresh token the same way.
+- All other guardian endpoints require `Authorization: Bearer <token>` for a
+  valid guardian token. Unlike participant auth, there's no URL `:id` param
+  to check against — the guardian's identity and linked `participantId` are
+  derived entirely from the token, so there's no client-supplied ID a caller
+  could spoof to read another guardian's participant.
 
 ### Endpoints
 | Method & path | Purpose | Auth |
@@ -179,6 +235,10 @@ now written server-side at the end of each session via `POST
 | `POST /api/participants/:id/trials` | Batch-insert a session's trial logs | participant token |
 | `GET /api/dashboard/participants` | All participants + latest score/tier | admin key |
 | `GET /api/dashboard/participants/:id` | Full session + trial-log detail for one participant | admin key |
+| `POST /api/guardians/signup` | Verify child's PIN (read-only) and create a guardian account; returns `{ guardianId, participantId, token }` | none (this *is* the auth step) |
+| `POST /api/guardians/login` | Log in with guardian ID + password; returns `{ guardianId, participantId, token }` | none (this *is* the auth step) |
+| `GET /api/guardians/me` | Guardian identity + linked `participantId` | guardian token |
+| `GET /api/guardians/me/dashboard` | Full session history + confusion matrix for the linked participant | guardian token |
 
 ## Gaze estimation fields
 | Field | Type | Description |
