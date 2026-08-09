@@ -123,73 +123,65 @@ function GameSession({ participant, onLogout }) {
     
     // Called when the user chooses how to start the session
     async function handleStart({ webcamRequested }) {
-        // Create a new pseudonymous sesion ID, scoped to this participant
-        setSessionId(createSessionId(participant.participantId))
+        // Create one ID and reuse it throughout this session.
+        const newSessionId = createSessionId(participant.participantId)
 
-        // Build a fresh shuffled trial sequence for this session
-        setTrialSequence(buildTrialSequence(stimuli, 10))
+        // Restrict the trial pool according to the participant's current tier.
+        const newTrialSequence = buildAdaptiveTrialSequence(
+            stimuli,
+            10,
+            adaptiveState.tierIndex,
+        )
 
-        // Default webcam values
-        // These are used if the user starts without webcam
         let webcamEnabled = false
-        let webcamPermissionStatus = "not_requested"
+        let webcamPermissionStatus = 'not_requested'
         let stream = null
         let webgazerStarted = false
 
-        // Only request browser webcam access if the user chose the webcam option
+        // Request webcam access only when the participant selected it.
         if (webcamRequested) {
             const webcamResult = await requestWebcamPermission()
 
             webcamEnabled = webcamResult.webcamEnabled
-            webcamPermissionStatus = webcamResult.webcamPermissionStatus
+            webcamPermissionStatus =
+                webcamResult.webcamPermissionStatus
             stream = webcamResult.stream
         }
 
-        // Start WebGazer only if webcam permission was successfully granted
+        // WebGazer will manage its own webcam stream, so stop the
+        // temporary stream used during the permission request.
         if (webcamEnabled) {
-
             if (stream) {
                 stream.getTracks().forEach((track) => track.stop())
                 stream = null
             }
 
             const webgazerResult = await startWebGazer(handleGazeData)
-
-            // Convert the returned WebGazer object into a Boolean
             webgazerStarted = Boolean(webgazerResult)
         }
 
         setSessionId(newSessionId)
+        setTrialSequence(newTrialSequence)
 
-        // Store the webcam stream for later use
         setWebcamStream(stream)
-
-        // Store session metadata
-        // This only records whether the user chose the webcam option
         setSessionMetadata({
             sessionId: newSessionId,
             startedAt: new Date().toISOString(),
             webcamRequested,
             webcamEnabled,
             webcamPermissionStatus,
-            webgazerStarted
+            webgazerStarted,
         })
-    // Called when the user clicks "Start"
-    function handleStart() {
-        // Create a new pseudonymous sesion ID, scoped to this participant
-        setSessionId(createSessionId(participant.participantId))
 
-        // Build a fresh shuffled trial sequence, restricted to the stimulus
-        // pool unlocked for this participant's current difficulty tier
-        setTrialSequence(buildAdaptiveTrialSequence(stimuli, 10, adaptiveState.tierIndex))
-
-        // Reset all game state
-        setSessionStarted(true)
+        // Reset the game state for the new session.
         setSessionComplete(false)
         setCurrentTrialIndex(0)
         setTrialLogs([])
         setLastTrialLog(null)
         setShowFeedback(false)
+
+        // Do this last, after the session has been prepared.
+        setSessionStarted(true)
     }
 
     // Called when the user selects an answer
@@ -391,6 +383,6 @@ function GameSession({ participant, onLogout }) {
         />
     </>
     )
-}}
+}
 
 export default GameSession
