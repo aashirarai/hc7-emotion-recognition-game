@@ -29,6 +29,12 @@ export async function startWebGazer(onGazeData) {
                 })
             })
 
+            // Re-enable WebGazer's built-in debugging visuals
+            webgazer.showVideo(true)
+            webgazer.showPredictionPoints(true)
+            webgazer.showFaceFeedbackBox(true)
+            webgazer.showFaceOverlay(true)
+
             console.log("Gaze listener attached")
             
             await webgazer.begin()
