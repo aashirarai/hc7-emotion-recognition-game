@@ -30,11 +30,39 @@ function clampTier(tierIndex) {
     return Math.min(Math.max(tierIndex, 0), TIER_THRESHOLDS.length - 1)
 }
 
-// Returns the stimuli playable at a given tier. Stimuli with no difficulty
-// score (null — no metadata match) are excluded rather than assumed easy.
+// Returns the stimuli playable at a given tier, balanced so every emotion
+// contributes the same number of stimuli. Stimuli with no difficulty score
+// (null — no metadata match) are excluded rather than assumed easy.
+//
+// The difficulty ceiling alone isn't enough: some emotions (e.g. happy) have
+// far more naturally "easy" KDEF images than others (e.g. fear), so a flat
+// ceiling filter left happy/disgust dominating the early tiers' pools. Once
+// filtered, stimuli are grouped by emotion and each group is capped to the
+// size of the smallest group, so no emotion is over-represented relative to
+// the others. At the easiest tiers this naturally pulls in cartoon stimuli
+// (always difficulty 0, so always eligible) to stand in for emotions with
+// few or no easy KDEF images — no special-casing needed, since they're just
+// another member of that emotion's group.
 export function getPoolForTier(stimuli, tierIndex) {
     const ceiling = TIER_THRESHOLDS[tierIndex]
-    return stimuli.filter(({ difficulty }) => difficulty !== null && difficulty <= ceiling)
+    const eligible = stimuli.filter(({ difficulty }) => difficulty !== null && difficulty <= ceiling)
+
+    const byEmotion = new Map()
+    for (const item of eligible) {
+        if (!byEmotion.has(item.emotion)) byEmotion.set(item.emotion, [])
+        byEmotion.get(item.emotion).push(item)
+    }
+
+    const groupSizes = [...byEmotion.values()].map((group) => group.length)
+    if (groupSizes.length === 0) return []
+    const capPerEmotion = Math.min(...groupSizes)
+
+    const balanced = []
+    for (const group of byEmotion.values()) {
+        const shuffled = [...group].sort(() => Math.random() - 0.5)
+        balanced.push(...shuffled.slice(0, capPerEmotion))
+    }
+    return balanced
 }
 
 // Applies one session's composite score to the participant's adaptive state.
