@@ -10,7 +10,8 @@
     "dev:server": "npm run dev --prefix server",
     "build": "vite build",
     "lint": "eslint .",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "vitest --environment jsdom"
   },
   "dependencies": {
     "react": "^19.2.5",
