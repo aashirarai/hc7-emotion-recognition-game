@@ -184,6 +184,46 @@ function GameSession({ participant, onLogout }) {
         setSessionStarted(true)
     }
 
+    function summariseGazeSamples(samples) {
+        const stimulusElement = document.getElementById('active-stimulus-aoi')
+
+        if (!stimulusElement || samples.length === 0) {
+            return {
+                gazeSamplesTotal: samples.length,
+                onStimulusCount: 0,
+                offStimulusCount: samples.length,
+                onStimulusDwellProp: null,
+                offStimulusDwellProp: null,
+            }
+        }
+
+        const rect = stimulusElement.getBoundingClientRect()
+
+        let onStimulusCount = 0
+        
+        samples.forEach((sample) => {
+            const isOnStimulus =
+                sample.x >= rect.left &&
+                sample.x <= rect.right &&
+                sample.y >= rect.top &&
+                sample.y <= rect.bottom
+
+            if (isOnStimulus) {
+                onStimulusCount += 1
+            }
+        })
+
+        const offStimulusCount = samples.length - onStimulusCount
+
+        return {
+            gazeSampleCount: samples.length,
+            onStimulusCount,
+            offStimulusCount,
+            onStimulusDwellProp: samples.length > 0 ? onStimulusCount / samples.length : null,
+            offStimulusDwellProp: samples.length > 0 ? offStimulusCount / samples.length : null,
+        }
+    }
+
     // Called when the user selects an answer
     function handleAnswer(selectedEmotion) {
         // Safety check
@@ -198,6 +238,12 @@ function GameSession({ participant, onLogout }) {
         // Calculate reaction time from trial start to button click
         const reactionTimeMs = Math.round(performance.now() - trialStartTime.current)
 
+        const gazeDurationMs = reactionTimeMs
+
+        const gazeSamplingRateHz = reactionTimeMs > 0 ? Math.round((gazeSampleCount / reactionTimeMs) * 1000) : 0
+
+        const gazeSummary = summariseGazeSamples(currentTrialGazeSamplesRef.current)
+
         // Create a structured trial log
         const log = createTrialLog({
             participantId: participant.participantId,
@@ -206,7 +252,10 @@ function GameSession({ participant, onLogout }) {
             stimulus: currentStimulus,
             selectedEmotion,
             reactionTimeMs,
-            gazeSampleCount
+            gazeSampleCount,
+            gazeDurationMs,
+            gazeSamplingRateHz,
+            gazeSummary,
         })
 
         // Create the updated full session log immediately

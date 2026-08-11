@@ -30,7 +30,7 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer }) {
             </div>
 
             {/* Stimulus */}
-            <div className="stimulus-card">
+            <div className="stimulus-card" id="active-stimulus-aoi">
                 <StimulusDisplay stimulus={stimulus} />
                 <span
                     style={{

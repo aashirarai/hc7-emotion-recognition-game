@@ -9,7 +9,10 @@ export function createTrialLog({
     stimulus,
     selectedEmotion,
     reactionTimeMs,
-    gazeSampleCount = 0
+    gazeSampleCount = 0,
+    gazeDurationMs = null,
+    gazeSamplingRateHz = 0,
+    gazeSummary = {}
 }) {
     // Check whether the selected answer matches the correct emotion
     const isCorrect = (selectedEmotion === stimulus.emotion)
@@ -36,8 +39,15 @@ export function createTrialLog({
         timestamp: new Date().toISOString(),
 
         // Basic gaze fields
+        gazeDataAvailable: gazeSampleCount > 0,
         gazeSampleCount,
-        gazeDataAvailable: gazeSampleCount > 0
+        gazeDurationMs,
+        gazeSamplingRateHz,
+        gazeSamplesTotal: gazeSummary.gazeSamplesTotal ?? gazeSampleCount,
+        onStimulusCount: gazeSummary.onStimulusCount ?? 0,
+        offStimulusCount: gazeSummary.offStimulusCount ?? 0,
+        onStimulusDwellProp: gazeSummary.onStimulusDwellProp ?? null,
+        offStimulusDwellProp: gazeSummary.offStimulusDwellProp ?? null,
     }
 }
 
