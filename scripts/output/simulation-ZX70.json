@@ -1,0 +1,464 @@
+{
+  "generatedAt": "2026-08-10T11:45:13.211Z",
+  "server": "http://localhost:3001",
+  "runTag": "ZX70",
+  "emotions": [
+    "happy",
+    "neutral",
+    "surprise",
+    "sad",
+    "disgust",
+    "fear",
+    "angry"
+  ],
+  "nPerEmotion": 20,
+  "reports": [
+    {
+      "profileId": "sharp_adult",
+      "label": "Sharp adult (high accuracy, peaked errors)",
+      "accuracyByEmotion": {
+        "happy": 0.86,
+        "neutral": 0.7999999999999999,
+        "surprise": 0.8225,
+        "sad": 0.8075,
+        "disgust": 0.8075,
+        "fear": 0.8075,
+        "angry": 0.815
+      },
+      "intendedMatrix": [
+        [
+          17,
+          0,
+          0,
+          2,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          16,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          3,
+          2,
+          12,
+          0,
+          2,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          16,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          15,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          19,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          1,
+          0,
+          15
+        ]
+      ],
+      "observedMatrix": [
+        [
+          17,
+          0,
+          0,
+          2,
+          0,
+          1,
+          0
+        ],
+        [
+          1,
+          16,
+          0,
+          2,
+          1,
+          0,
+          0
+        ],
+        [
+          3,
+          2,
+          12,
+          0,
+          2,
+          1,
+          0
+        ],
+        [
+          1,
+          1,
+          0,
+          16,
+          0,
+          0,
+          2
+        ],
+        [
+          0,
+          0,
+          1,
+          1,
+          15,
+          2,
+          1
+        ],
+        [
+          1,
+          0,
+          0,
+          0,
+          0,
+          19,
+          0
+        ],
+        [
+          2,
+          0,
+          0,
+          2,
+          1,
+          0,
+          15
+        ]
+      ],
+      "cosineSimilarity": 0.9999999999999999,
+      "pearsonCorrelation": 1,
+      "intendedTotal": 140,
+      "observedTotal": 140,
+      "rowsPass": 7,
+      "overallPass": true
+    },
+    {
+      "profileId": "young_low_skill",
+      "label": "Younger / lower skill (low accuracy on hard emotions, spread errors)",
+      "accuracyByEmotion": {
+        "happy": 0.59,
+        "neutral": 0.35,
+        "surprise": 0.43999999999999995,
+        "sad": 0.38,
+        "disgust": 0.38,
+        "fear": 0.38,
+        "angry": 0.4099999999999999
+      },
+      "intendedMatrix": [
+        [
+          14,
+          0,
+          1,
+          0,
+          2,
+          1,
+          2
+        ],
+        [
+          4,
+          6,
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          8,
+          4,
+          4,
+          0,
+          1
+        ],
+        [
+          0,
+          2,
+          2,
+          10,
+          4,
+          2,
+          0
+        ],
+        [
+          0,
+          6,
+          1,
+          2,
+          4,
+          2,
+          5
+        ],
+        [
+          6,
+          1,
+          2,
+          3,
+          2,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          4,
+          0,
+          5,
+          8
+        ]
+      ],
+      "observedMatrix": [
+        [
+          14,
+          0,
+          1,
+          0,
+          2,
+          1,
+          2
+        ],
+        [
+          4,
+          6,
+          0,
+          1,
+          2,
+          3,
+          4
+        ],
+        [
+          1,
+          2,
+          8,
+          4,
+          4,
+          0,
+          1
+        ],
+        [
+          0,
+          2,
+          2,
+          10,
+          4,
+          2,
+          0
+        ],
+        [
+          0,
+          6,
+          1,
+          2,
+          4,
+          2,
+          5
+        ],
+        [
+          6,
+          1,
+          2,
+          3,
+          2,
+          3,
+          3
+        ],
+        [
+          1,
+          1,
+          1,
+          4,
+          0,
+          5,
+          8
+        ]
+      ],
+      "cosineSimilarity": 1,
+      "pearsonCorrelation": 1,
+      "intendedTotal": 140,
+      "observedTotal": 140,
+      "rowsPass": 7,
+      "overallPass": true
+    },
+    {
+      "profileId": "distracted",
+      "label": "Distracted (moderate accuracy, near-uniform errors)",
+      "accuracyByEmotion": {
+        "happy": 0.74,
+        "neutral": 0.6,
+        "surprise": 0.6525,
+        "sad": 0.6174999999999999,
+        "disgust": 0.6174999999999999,
+        "fear": 0.6174999999999999,
+        "angry": 0.635
+      },
+      "intendedMatrix": [
+        [
+          18,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          11,
+          0,
+          2,
+          1,
+          3,
+          0
+        ],
+        [
+          3,
+          0,
+          12,
+          1,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          10,
+          2,
+          0,
+          2
+        ],
+        [
+          1,
+          2,
+          1,
+          4,
+          9,
+          2,
+          1
+        ],
+        [
+          1,
+          1,
+          2,
+          0,
+          0,
+          15,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          1,
+          0,
+          13
+        ]
+      ],
+      "observedMatrix": [
+        [
+          18,
+          0,
+          0,
+          2,
+          0,
+          0,
+          0
+        ],
+        [
+          3,
+          11,
+          0,
+          2,
+          1,
+          3,
+          0
+        ],
+        [
+          3,
+          0,
+          12,
+          1,
+          1,
+          2,
+          1
+        ],
+        [
+          2,
+          2,
+          2,
+          10,
+          2,
+          0,
+          2
+        ],
+        [
+          1,
+          2,
+          1,
+          4,
+          9,
+          2,
+          1
+        ],
+        [
+          1,
+          1,
+          2,
+          0,
+          0,
+          15,
+          1
+        ],
+        [
+          0,
+          1,
+          2,
+          3,
+          1,
+          0,
+          13
+        ]
+      ],
+      "cosineSimilarity": 1.0000000000000002,
+      "pearsonCorrelation": 1,
+      "intendedTotal": 140,
+      "observedTotal": 140,
+      "rowsPass": 7,
+      "overallPass": true
+    }
+  ]
+}
