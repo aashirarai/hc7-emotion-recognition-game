@@ -93,3 +93,41 @@ Hand-rolled SVG charts (matching this frontend's zero-dependency-beyond-React po
 - Verified via direct API calls (register/login/session/trial posts, then guardian signup/login/dashboard fetches) against the already-running dev server, cross-checked against `server/data.sqlite` directly: wrong-PIN and unknown-participant signup errors, duplicate/second-guardian signup, login success/failure (collapsed to one `invalid_credentials` error), and the returned confusion matrix and per-session `tierIndex` values matched hand-posted trial data exactly. Confirmed `pin_hash`/`pin_salt` byte-for-byte unchanged after guardian signup. `npm run lint` and `npm run build` both pass.
 - Not yet verified: an actual browser click-through of the role picker → guardian signup form → rendered dashboard/charts — no browser automation tooling was available in that session. Needs a manual pass before this is considered fully done.
 - Next: no rate-limiting anywhere in this codebase (pre-existing gap, now also applies to `/api/guardians/signup`'s PIN check); no password-reset flow for guardians; guardian dashboard is read-only, no way yet for a guardian to unlink or remove their account.
+
+## 11/08/2026
+
+### Decision
+
+Implement the first version of the optional webcam-based gaze module on the `experiment/webcam-gaze-module` branch. The module uses WebGazer as a browser-compatible baseline gaze estimator. When a participant chooses "Enable webcam and start", the app requests webcam permission, starts WebGazer, and collects gaze predictions only during active trial windows.
+
+Each trial now records basic gaze availability and coarse AOI summary fields alongside the existing behavioural data. The initial gaze fields are:
+
+- `gazeDataAvailable`
+- `gazeSampleCount`
+- `gazeDurationMs`
+- `gazeSamplingRateHz`
+- `gazeSamplesTotal`
+- `onStimulusCount`
+- `offStimulusCount`
+- `onStimulusDwellProp`
+- `offStimulusDwellProp`
+
+The first AOI is deliberately broad: the full stimulus card is treated as the active stimulus AOI, and gaze samples are classified as either on-stimulus-card or off-stimulus-card using the sample x/y coordinates and the stimulus card's browser bounding box.
+
+### Reason
+
+The individual gaze module does not aim to build a new gaze-estimation model from scratch. Instead, it evaluates whether an existing browser-compatible webcam gaze method can provide coarse, quality-gated attention metrics during an online emotion-recognition task.
+
+Because webcam gaze is expected to be noisy, the first validation target is not precise eye/mouth fixation. The first target is whether WebGazer can distinguish broad on-stimulus versus off-stimulus attention during active trials.
+
+A methodological limitation was identified after the first controlled self-tests: the rendered face images from the stimulus dataset are not the same size as the `.stimulus-card` AOI. The stimulus card is wider than the actual displayed image, so the current `onStimulusDwellProp` field is better interpreted as "on stimulus card" rather than "on face image" or "on facial stimulus". This means the current AOI is intentionally generous and should not be used to claim precise face-region attention.
+
+### Impact / Next step
+
+- The gaze module is now technically integrated into the active game rather than only existing as a sandbox test.
+- Gaze samples are collected only during the active stimulus-response period and are stopped when the participant selects an answer.
+- Trial-level gaze summaries are included in exported CSV logs, allowing preliminary evaluation against controlled self-test conditions.
+- Initial controlled self-tests compared "looking at stimulus" versus "looking away" conditions. Across three runs per condition, on-stimulus-card dwell was substantially higher when looking at the stimulus than when looking away, suggesting that the coarse card-level AOI metric is promising.
+- A qualitative limitation was observed: WebGazer's red-dot prediction appeared more accurate when the cursor was moved near the attended region, suggesting that the baseline may be influenced by mouse/click calibration behaviour. This should be explicitly reported as a limitation and tested further with a no-cursor-movement condition.
+- A second limitation was identified: the current AOI is based on the full stimulus card rather than the actual rendered image bounds. This may overestimate true on-image/face attention because the dataset images are narrower than the card container.
+- Next: add an image-specific AOI using the rendered image's bounding box, export both card-level and image-level dwell metrics, and compare whether the looking-at versus looking-away separation remains strong when the AOI is tightened from the card to the actual image.
