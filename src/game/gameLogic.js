@@ -12,6 +12,7 @@ export function createTrialLog({
     gazeSampleCount = 0,
     gazeDurationMs = null,
     gazeSamplingRateHz = 0,
+    gazeQualityFlag = 'not_computed',
     gazeSummary = {}
 }) {
     // Check whether the selected answer matches the correct emotion
@@ -43,11 +44,19 @@ export function createTrialLog({
         gazeSampleCount,
         gazeDurationMs,
         gazeSamplingRateHz,
+        gazeQualityFlag,
+
         gazeSamplesTotal: gazeSummary.gazeSamplesTotal ?? gazeSampleCount,
+
         onStimulusCount: gazeSummary.onStimulusCount ?? 0,
         offStimulusCount: gazeSummary.offStimulusCount ?? 0,
         onStimulusDwellProp: gazeSummary.onStimulusDwellProp ?? null,
         offStimulusDwellProp: gazeSummary.offStimulusDwellProp ?? null,
+
+        onStimulusImageCount: gazeSummary.onStimulusImageCount ?? 0,
+        offStimulusImageCount: gazeSummary.offStimulusImageCount ?? 0,
+        onStimulusImageDwellProp: gazeSummary.onStimulusImageDwellProp ?? null,
+        offStimulusImageDwellProp: gazeSummary.offStimulusImageDwellProp ?? null,
     }
 }
 

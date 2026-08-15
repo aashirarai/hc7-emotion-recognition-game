@@ -4,6 +4,7 @@ function StimulusDisplay({ stimulus }) {
     if (stimulus.imageSrc) {
         return (
             <img
+                id="active-stimulus-image-aoi"
                 src={stimulus.imageSrc}
                 alt={`${stimulus.emotion} face`}
                 onError={(e) => {
@@ -30,7 +31,7 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer }) {
             </div>
 
             {/* Stimulus */}
-            <div className="stimulus-card" id="active-stimulus-aoi">
+            <div className="stimulus-card" id="active-stimulus-card-aoi">
                 <StimulusDisplay stimulus={stimulus} />
                 <span
                     style={{

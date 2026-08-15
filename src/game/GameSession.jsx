@@ -185,22 +185,29 @@ function GameSession({ participant, onLogout }) {
     }
 
     function summariseGazeSamples(samples) {
-        const stimulusElement = document.getElementById('active-stimulus-aoi')
+        const stimulusElement = document.getElementById('active-stimulus-card-aoi')
+        const imageElement = document.getElementById('active-stimulus-image-aoi')
 
-        if (!stimulusElement || samples.length === 0) {
+        if (!stimulusElement || !imageElement || samples.length === 0) {
             return {
                 gazeSamplesTotal: samples.length,
                 onStimulusCount: 0,
                 offStimulusCount: samples.length,
                 onStimulusDwellProp: null,
                 offStimulusDwellProp: null,
+                onStimulusImageCount: 0,
+                offStimulusImageCount: samples.length,
+                onStimulusImageDwellProp: null,
+                offStimulusImageDwellProp: null,
             }
         }
 
         const rect = stimulusElement.getBoundingClientRect()
+        const imageRect = imageElement.getBoundingClientRect()
 
         let onStimulusCount = 0
-        
+        let onStimulusImageCount = 0
+
         samples.forEach((sample) => {
             const isOnStimulus =
                 sample.x >= rect.left &&
@@ -213,15 +220,39 @@ function GameSession({ participant, onLogout }) {
             }
         })
 
+        samples.forEach((sample) => {
+            const isOnStimulusImage =
+                sample.x >= imageRect.left &&
+                sample.x <= imageRect.right &&
+                sample.y >= imageRect.top &&
+                sample.y <= imageRect.bottom
+
+            if (isOnStimulusImage) {
+                onStimulusImageCount += 1
+            }
+        })
+
         const offStimulusCount = samples.length - onStimulusCount
+        const offStimulusImageCount = samples.length - onStimulusImageCount
 
         return {
-            gazeSampleCount: samples.length,
+            gazeSamplesTotal: samples.length,
             onStimulusCount,
             offStimulusCount,
             onStimulusDwellProp: samples.length > 0 ? onStimulusCount / samples.length : null,
             offStimulusDwellProp: samples.length > 0 ? offStimulusCount / samples.length : null,
+            onStimulusImageCount,
+            offStimulusImageCount,
+            onStimulusImageDwellProp: samples.length > 0 ? onStimulusImageCount / samples.length : null,
+            offStimulusImageDwellProp: samples.length > 0 ? offStimulusImageCount / samples.length : null,
         }
+    }
+
+    function getGazeQualityFlag(gazeSampleCount, gazeSamplingRateHz) {
+        if (gazeSampleCount === 0) return 'no_gaze_data'
+        if (gazeSampleCount < 30) return 'low_sample_count'
+        if (gazeSamplingRateHz < 10) return 'low_sampling_rate'
+        return 'usable'
     }
 
     // Called when the user selects an answer
@@ -242,6 +273,8 @@ function GameSession({ participant, onLogout }) {
 
         const gazeSamplingRateHz = reactionTimeMs > 0 ? Math.round((gazeSampleCount / reactionTimeMs) * 1000) : 0
 
+        const gazeQualityFlag = getGazeQualityFlag(gazeSampleCount, gazeSamplingRateHz)
+
         const gazeSummary = summariseGazeSamples(currentTrialGazeSamplesRef.current)
 
         // Create a structured trial log
@@ -255,6 +288,7 @@ function GameSession({ participant, onLogout }) {
             gazeSampleCount,
             gazeDurationMs,
             gazeSamplingRateHz,
+            gazeQualityFlag,
             gazeSummary,
         })
 
