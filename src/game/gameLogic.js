@@ -9,6 +9,7 @@ export function createTrialLog({
     stimulus,
     selectedEmotion,
     reactionTimeMs,
+    trialDurationFlag = 'not_computed',
     gazeSampleCount = 0,
     gazeDurationMs = null,
     gazeSamplingRateHz = 0,
@@ -33,6 +34,7 @@ export function createTrialLog({
         selectedEmotion,
         isCorrect,
         reactionTimeMs,
+        trialDurationFlag,
 
         // Game setting fields
         difficulty: stimulus.difficulty ?? "unassigned",
@@ -48,15 +50,34 @@ export function createTrialLog({
 
         gazeSamplesTotal: gazeSummary.gazeSamplesTotal ?? gazeSampleCount,
 
-        onStimulusCount: gazeSummary.onStimulusCount ?? 0,
-        offStimulusCount: gazeSummary.offStimulusCount ?? 0,
-        onStimulusDwellProp: gazeSummary.onStimulusDwellProp ?? null,
-        offStimulusDwellProp: gazeSummary.offStimulusDwellProp ?? null,
+        // Screen dimensions and stimulus ratios
+        viewportWidth: gazeSummary.viewportWidth ?? null,
+        viewportHeight: gazeSummary.viewportHeight ?? null,
+        screenAreaPx: gazeSummary.screenAreaPx ?? null,
 
+        stimulusCardAreaPx: gazeSummary.stimulusCardAreaPx ?? null,
+        stimulusImageAreaPx: gazeSummary.stimulusImageAreaPx ?? null,
+        stimulusCardAreaRatio: gazeSummary.stimulusCardAreaRatio ?? null,
+        stimulusImageAreaRatio: gazeSummary.stimulusImageAreaRatio ?? null,
+
+        // On-/off-stimulus card AOI
+        onStimulusCardCount: gazeSummary.onStimulusCardCount ?? 0,
+        offStimulusCardCount: gazeSummary.offStimulusCardCount ?? 0,
+        onStimulusCardDwellProp: gazeSummary.onStimulusCardDwellProp ?? null,
+        offStimulusCardDwellProp: gazeSummary.offStimulusCardDwellProp ?? null,
+
+        // On-/off-stimulus image AOI
         onStimulusImageCount: gazeSummary.onStimulusImageCount ?? 0,
         offStimulusImageCount: gazeSummary.offStimulusImageCount ?? 0,
         onStimulusImageDwellProp: gazeSummary.onStimulusImageDwellProp ?? null,
         offStimulusImageDwellProp: gazeSummary.offStimulusImageDwellProp ?? null,
+
+        // Upper/lower image AOI
+        upperImageCount: gazeSummary.upperImageCount ?? 0,
+        lowerImageCount: gazeSummary.lowerImageCount ?? 0,
+        upperImageDwellProp: gazeSummary.upperImageDwellProp ?? null,
+        lowerImageDwellProp: gazeSummary.lowerImageDwellProp ?? null,
+        upperLowerImageRatio: gazeSummary.upperLowerImageRatio ?? null,
     }
 }
 

@@ -2,35 +2,82 @@
 
 This document records informal self-test data used to evaluate whether the optional webcam gaze module can support coarse AOI metrics during active emotion-recognition trials.
 
-## Current gaze metric
+## Current gaze metrics
 
-The current primary gaze metric is `onStimulusDwellProp`, defined as:
+The gaze module currently exports trial-level webcam gaze summaries based on WebGazer x/y predictions collected during the active stimulus-response window.
 
-> the proportion of valid WebGazer samples during a trial whose x/y coordinate falls inside the active stimulus card.
+The main AOI metrics are:
 
-The complementary metric is `offStimulusDwellProp`.
+- `onStimulusCardDwellProp`
+- `offStimulusCardDwellProp`
+- `onStimulusImageDwellProp`
+- `offStimulusImageDwellProp`
+- `upperImageDwellProp`
+- `lowerImageDwellProp`
 
-At this stage, these metrics should be interpreted as **card-level AOI measures**, not precise face-image or fixation measures.
+At this stage, these metrics should be interpreted as **coarse AOI measures**, not precise fixation measurements.
 
-## Important AOI limitation
+## Current AOI definitions
 
-The current AOI is based on the `.stimulus-card` rectangle rather than the actual rendered face image. During testing, it became clear that the face images from the dataset are narrower than the stimulus card container.
+### Card-level AOI
 
-This means that a gaze sample can be counted as "on stimulus" even if it falls inside the card but outside the actual image. Therefore, the current metric is more accurately described as:
+The card-level AOI is based on the full `.stimulus-card` rectangle.
 
-> `onStimulusCardDwellProp`
+This is currently represented by:
 
-rather than:
+- `onStimulusCardDwellProp`
+- `offStimulusCardDwellProp`
 
-> `onFaceDwellProp`
+### Image-level AOI
 
-or:
+The image-level AOI is based on the actual rendered stimulus image bounds, using the image element's browser bounding box.
 
-> `onStimulusImageDwellProp`
+This is represented by:
 
-This does not invalidate the current self-test results, but it means the first AOI is deliberately broad and generous. It is useful for testing whether WebGazer can distinguish broad attention toward the stimulus area, but it should not be used to claim precise attention to the face image itself.
+- `onStimulusImageDwellProp`
+- `offStimulusImageDwellProp`
 
-## Current gaze fields
+This is stricter than the card-level AOI and is closer to measuring whether gaze falls on the displayed stimulus image.
+
+### Upper/lower image AOI
+
+The rendered image rectangle is also split horizontally into:
+
+- upper-image AOI
+- lower-image AOI
+
+This is represented by:
+
+- `upperImageDwellProp`
+- `lowerImageDwellProp`
+- `upperLowerImageRatio`
+
+This should be interpreted as an **upper/lower image-region distinction**, not an upper/lower face distinction. The current implementation does not detect the face within each image.
+
+## Important AOI limitation: image AOI versus face AOI
+
+The image-level AOI is not the same as a true face-level AOI.
+
+The current implementation uses the rendered image rectangle, but the face itself may not occupy the same proportion or position within every image. Because the project uses KDEF dataset images, faces are likely to be relatively standardised, but the implementation does not currently verify face size, face position, or facial landmark alignment for each stimulus.
+
+This means:
+
+> `onStimulusImageDwellProp` measures gaze falling within the rendered image, not necessarily gaze falling within the face itself.
+
+Similarly:
+
+> `upperImageDwellProp` and `lowerImageDwellProp` measure gaze falling within the upper or lower half of the rendered image, not necessarily the upper or lower half of the face.
+
+A true upper/lower-face AOI would require one of the following:
+
+- face detection for each stimulus image
+- facial landmark detection
+- manually defined face bounding boxes
+- pre-computed face AOI metadata for each stimulus
+
+For the current project, upper/lower image AOIs are treated as an exploratory spatial-resolution check.
+
+## Current exported gaze fields
 
 The current exported gaze fields are:
 
@@ -38,11 +85,66 @@ The current exported gaze fields are:
 - `gazeSampleCount`
 - `gazeDurationMs`
 - `gazeSamplingRateHz`
+- `gazeQualityFlag`
+- `trialDurationFlag`
 - `gazeSamplesTotal`
-- `onStimulusCount`
-- `offStimulusCount`
-- `onStimulusDwellProp`
-- `offStimulusDwellProp`
+- `viewportWidth`
+- `viewportHeight`
+- `screenAreaPx`
+- `stimulusCardAreaPx`
+- `stimulusImageAreaPx`
+- `stimulusCardAreaRatio`
+- `stimulusImageAreaRatio`
+- `onStimulusCardCount`
+- `offStimulusCardCount`
+- `onStimulusCardDwellProp`
+- `offStimulusCardDwellProp`
+- `onStimulusImageCount`
+- `offStimulusImageCount`
+- `onStimulusImageDwellProp`
+- `offStimulusImageDwellProp`
+- `upperImageCount`
+- `lowerImageCount`
+- `upperImageDwellProp`
+- `lowerImageDwellProp`
+- `upperLowerImageRatio`
+
+## Gaze quality and trial timing flags
+
+### Gaze quality flag
+
+The `gazeQualityFlag` is a heuristic trial-level flag used to indicate whether enough gaze samples were collected for the trial to be interpreted.
+
+Current categories:
+
+- `no_gaze_data`
+- `low_sample_count`
+- `low_sampling_rate`
+- `usable`
+
+This flag does not prove that the gaze estimate is spatially accurate. It only indicates whether the trial has enough basic gaze data to analyse.
+
+### Trial duration flag
+
+The `trialDurationFlag` is used to identify trials whose response time does not match the intended self-test timing protocol.
+
+Current categories:
+
+- `too_short`
+- `expected`
+- `too_long`
+
+For the controlled self-tests, participants were aiming to respond after approximately 3 seconds. A trial is currently flagged as `too_long` if it exceeds 7000 ms. This is a pragmatic quality-control heuristic, not a scientific threshold. It helps identify trials where the gaze summary may include non-task behaviour such as distraction, cursor checking, posture adjustment, or unusually delayed responding.
+
+A trial can therefore be:
+
+> `gazeQualityFlag = usable`
+
+but also:
+
+> `trialDurationFlag = too_long`
+
+This means that enough gaze samples were collected, but the timing was less comparable to the intended controlled self-test protocol.
 
 ## Self-test 1: Initial uncontrolled comparison
 
@@ -81,7 +183,49 @@ The controlled self-test showed a clear separation between conditions. Mean on-s
 
 This supports keeping the broad on/off-stimulus-card metric as the primary exploratory gaze metric for now.
 
-However, because the AOI currently uses the full stimulus card rather than the actual rendered image, this result should be interpreted as evidence that WebGazer can distinguish broad attention toward the stimulus display area, not evidence that it can precisely identify gaze on the face image.
+However, this result should still be interpreted as evidence that WebGazer can distinguish broad attention toward the stimulus display area, not evidence that it can precisely identify fixation on facial features.
+
+## Self-test 3: AOI geometry smoke test
+
+### Conditions
+
+- 2 smoke-test runs
+- 10 trials per run
+- Webcam enabled
+- Card-level, image-level, upper/lower image, AOI area, gaze quality, and trial duration fields exported
+
+### Summary table
+
+| Metric | Result |
+|---|---:|
+| Trials | 20 |
+| Usable gaze trials | 20 / 20 |
+| Expected-duration trials | 17 / 20 |
+| Too-long trials | 3 / 20 |
+| Mean reaction time | 5271 ms |
+| Mean gaze sample count | 138.4 |
+| Mean sampling rate | 26.5 Hz |
+| Mean card-level dwell | 74.3% |
+| Mean image-level dwell | 74.2% |
+| Mean card-image dwell difference | 0.1 percentage points |
+| Mean upper-image dwell | 26.8% |
+| Mean lower-image dwell | 47.4% |
+| Mean stimulus card area ratio | 15.6% of viewport |
+| Mean stimulus image area ratio | 15.5% of viewport |
+| Mean card AOI enrichment | 4.8x |
+| Mean image AOI enrichment | 4.8x |
+
+### Interpretation
+
+The AOI geometry smoke test confirmed that the new fields export correctly.
+
+The card-level and image-level dwell proportions were almost identical. The measured area ratios also showed that the stimulus card and rendered image occupied almost the same proportion of the viewport in the current layout. This suggests that, under the current CSS/layout, the image effectively fills the stimulus card, so card-level and image-level AOIs may not differ meaningfully.
+
+This finding updates the earlier concern that the dataset images were much narrower than the stimulus card. While the images may appear visually narrower in some contexts, the measured browser bounding boxes in this smoke test were nearly identical. Future analysis should rely on measured AOI geometry rather than visual assumptions.
+
+The AOI area ratios are useful because they allow dwell proportions to be interpreted relative to the size of the AOI. In this smoke test, the image AOI occupied approximately 15.5% of the viewport but accounted for approximately 74.2% of gaze samples, giving an image AOI enrichment of approximately 4.8x relative to viewport area.
+
+This suggests that AOI dwell should not be interpreted only as a raw proportion. It should also be considered relative to how much of the screen the AOI occupies.
 
 ## Observed limitation: cursor dependence
 
@@ -99,56 +243,52 @@ Run a no-cursor-movement condition:
 
 Compare this against the existing looking-at-stimulus condition.
 
-## Observed limitation: card AOI versus image AOI
+## Observed limitation: image AOI versus true face AOI
 
-The current AOI uses the full `.stimulus-card` rectangle. This is wider than the actual rendered dataset image, so the current metric may overestimate how often gaze falls on the image itself.
+The current image-level AOI is based on the whole rendered stimulus image. This does not necessarily isolate the face itself.
 
-### Follow-up implementation needed
+This matters especially for upper/lower AOI analysis. Splitting the rendered image into upper and lower halves does not guarantee that the split corresponds to upper and lower face regions. If faces vary in size, vertical position, hair coverage, neck visibility, or framing across KDEF images, then upper/lower image regions may include different proportions of forehead, hair, eyes, nose, mouth, neck, clothing, or background.
 
-Add a second, stricter AOI based on the actual rendered image bounds.
+### Follow-up implementation options
 
-Suggested future fields:
+Possible future improvements:
 
-- `onStimulusCardCount`
-- `offStimulusCardCount`
-- `onStimulusCardDwellProp`
-- `offStimulusCardDwellProp`
-- `onStimulusImageCount`
-- `offStimulusImageCount`
-- `onStimulusImageDwellProp`
-- `offStimulusImageDwellProp`
+| Option | Description | Feasibility |
+|---|---|---|
+| Keep upper/lower image AOIs | Treat upper/lower split as exploratory image-region analysis only | High |
+| Add face detection | Detect face bounding box per image, then split detected face vertically | Medium |
+| Add facial landmarks | Use landmarks to define eye/mouth or upper/lower face AOIs | Lower |
+| Manual face boxes | Manually define approximate face boxes for a subset of stimuli | Medium |
+| Future work only | Discuss true face AOIs as beyond current scope | High |
 
-The current broad card-level fields can be retained for comparison, but future interpretation should distinguish between:
+For the current project timeline, the safest interpretation is to keep upper/lower image AOIs as exploratory and describe true face-level AOIs as future work unless face detection is added and validated.
 
-- broad stimulus-area attention
-- actual image-level attention
+## Next validation questions
 
-## Next validation question
+The next evaluation questions are:
 
-The next evaluation question is:
+> Does the looking-at versus looking-away separation remain strong for both card-level and image-level AOIs?
 
-> Does the looking-at versus looking-away separation remain strong when the AOI is tightened from the full stimulus card to the actual rendered image?
+> Does upper/lower image dwell show any stable or interpretable pattern across conditions?
 
-Possible outcomes:
+> Does cursor movement influence WebGazer predictions enough to affect AOI dwell metrics?
 
-| Result | Interpretation |
-|---|---|
-| Card AOI works and image AOI also works | Stronger evidence that WebGazer can support coarse stimulus/image-level attention metrics |
-| Card AOI works but image AOI is weaker | WebGazer supports broad attention-to-task-area metrics, but not reliable image-level attention |
-| Neither AOI works reliably | Technical integration works, but AOI validity is limited under current conditions |
+> Does calibration/check mode improve gaze quality or AOI separation?
 
 ## Current decision
 
-The broad on/off-stimulus-card AOI metric is promising enough to retain as the primary exploratory gaze metric, but it should be described as a coarse, calibration-dependent attention proxy.
+The broad on/off-stimulus-card and on/off-stimulus-image AOI metrics are promising enough to retain as primary exploratory gaze metrics.
 
-The next implementation step should be image-level AOI extraction, not upper/lower-face AOIs yet.
+Upper/lower image AOIs should be retained for now as an exploratory spatial-resolution check, but they should not be described as upper/lower face AOIs unless a face-specific AOI method is added.
+
+AOI area ratios and AOI enrichment should be used in future analysis to address the ratio of stimulus/non-stimulus screen area.
 
 ## Next steps
 
-- Rename or clarify the current metric in documentation as card-level AOI dwell.
-- Add an ID or ref to the actual rendered stimulus image.
-- Use the rendered image's `getBoundingClientRect()` to compute image-level AOI bounds.
-- Export both card-level and image-level dwell metrics.
-- Re-run the controlled looking-at versus looking-away self-test.
+- Run controlled validation conditions using the expanded AOI fields.
+- Compare card-level dwell, image-level dwell, and upper/lower image dwell across conditions.
+- Add or compute AOI enrichment metrics during analysis.
 - Run a no-cursor-movement condition to test cursor/calibration dependence.
-- Only attempt upper/lower-stimulus AOIs if image-level AOI separation remains stable.
+- Run a cursor-supported condition to compare against no-cursor movement.
+- Add a simple calibration/check mode if time allows.
+- Treat true upper/lower face AOIs as future work unless face detection or face-box metadata is added.

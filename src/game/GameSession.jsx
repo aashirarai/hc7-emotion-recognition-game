@@ -180,7 +180,6 @@ function GameSession({ participant, onLogout }) {
         setLastTrialLog(null)
         setShowFeedback(false)
 
-        // Do this last, after the session has been prepared.
         setSessionStarted(true)
     }
 
@@ -188,63 +187,118 @@ function GameSession({ participant, onLogout }) {
         const stimulusElement = document.getElementById('active-stimulus-card-aoi')
         const imageElement = document.getElementById('active-stimulus-image-aoi')
 
+        // Get viewport dimensions to calculate screen area in px
+        const viewportWidth = window.innerWidth
+        const viewportHeight = window.innerHeight
+        const screenAreaPx = viewportWidth * viewportHeight
+
         if (!stimulusElement || !imageElement || samples.length === 0) {
             return {
                 gazeSamplesTotal: samples.length,
-                onStimulusCount: 0,
-                offStimulusCount: samples.length,
-                onStimulusDwellProp: null,
-                offStimulusDwellProp: null,
+
+                viewportWidth,
+                viewportHeight,
+                screenAreaPx,
+
+                stimulusCardAreaPx: null,
+                stimulusImageAreaPx: null,
+                stimulusCardAreaRatio: null,
+                stimulusImageAreaRatio: null,
+
+                onStimulusCardCount: 0,
+                offStimulusCardCount: samples.length,
+                onStimulusCardDwellProp: null,
+                offStimulusCardDwellProp: null,
+
                 onStimulusImageCount: 0,
                 offStimulusImageCount: samples.length,
                 onStimulusImageDwellProp: null,
                 offStimulusImageDwellProp: null,
+
+                upperImageCount: 0,
+                lowerImageCount: 0,
+                upperImageDwellProp: null,
+                lowerImageDwellProp: null,
+                upperLowerImageRatio: null,
             }
         }
 
-        const rect = stimulusElement.getBoundingClientRect()
+        const cardRect = stimulusElement.getBoundingClientRect()
         const imageRect = imageElement.getBoundingClientRect()
 
-        let onStimulusCount = 0
+        const stimulusCardAreaPx = cardRect.width * cardRect.height
+        const stimulusImageAreaPx = imageRect.width * imageRect.height
+
+        const stimulusCardAreaRatio = screenAreaPx > 0 ? stimulusCardAreaPx / screenAreaPx : null
+        const stimulusImageAreaRatio = screenAreaPx > 0 ? stimulusImageAreaPx / screenAreaPx : null
+
+        // Add half of height to the top y-coordinate;
+        // Not to the bottom because the coordinate system run upside down
+        const imageMidY = imageRect.top + (imageRect.height / 2)
+
+        let onStimulusCardCount = 0
         let onStimulusImageCount = 0
+        let upperImageCount = 0
+        let lowerImageCount = 0
 
         samples.forEach((sample) => {
-            const isOnStimulus =
-                sample.x >= rect.left &&
-                sample.x <= rect.right &&
-                sample.y >= rect.top &&
-                sample.y <= rect.bottom
+            const isOnStimulusCard =
+                sample.x >= cardRect.left &&
+                sample.x <= cardRect.right &&
+                sample.y >= cardRect.top &&
+                sample.y <= cardRect.bottom
 
-            if (isOnStimulus) {
-                onStimulusCount += 1
-            }
-        })
-
-        samples.forEach((sample) => {
             const isOnStimulusImage =
                 sample.x >= imageRect.left &&
                 sample.x <= imageRect.right &&
                 sample.y >= imageRect.top &&
                 sample.y <= imageRect.bottom
 
+            if (isOnStimulusCard) {
+                onStimulusCardCount += 1
+            }
+            
             if (isOnStimulusImage) {
                 onStimulusImageCount += 1
+
+                if (sample.y < imageMidY) {
+                    upperImageCount += 1
+                } else {
+                    lowerImageCount += 1
+                }
             }
         })
 
-        const offStimulusCount = samples.length - onStimulusCount
+        const offStimulusCardCount = samples.length - onStimulusCardCount
         const offStimulusImageCount = samples.length - onStimulusImageCount
 
         return {
             gazeSamplesTotal: samples.length,
-            onStimulusCount,
-            offStimulusCount,
-            onStimulusDwellProp: samples.length > 0 ? onStimulusCount / samples.length : null,
-            offStimulusDwellProp: samples.length > 0 ? offStimulusCount / samples.length : null,
+
+            viewportWidth,
+            viewportHeight,
+            screenAreaPx,
+
+            stimulusCardAreaPx,
+            stimulusImageAreaPx,
+            stimulusCardAreaRatio,
+            stimulusImageAreaRatio,
+
+            onStimulusCardCount,
+            offStimulusCardCount,
+            onStimulusCardDwellProp: samples.length > 0 ? onStimulusCardCount / samples.length : null,
+            offStimulusCardDwellProp: samples.length > 0 ? offStimulusCardCount / samples.length : null,
+            
             onStimulusImageCount,
             offStimulusImageCount,
             onStimulusImageDwellProp: samples.length > 0 ? onStimulusImageCount / samples.length : null,
             offStimulusImageDwellProp: samples.length > 0 ? offStimulusImageCount / samples.length : null,
+
+            upperImageCount,
+            lowerImageCount,
+            upperImageDwellProp: samples.length > 0 ? upperImageCount / samples.length : null,
+            lowerImageDwellProp: samples.length > 0 ? lowerImageCount / samples.length : null,
+            upperLowerImageRatio: lowerImageCount > 0 ? upperImageCount / lowerImageCount : null,
         }
     }
 
@@ -253,6 +307,12 @@ function GameSession({ participant, onLogout }) {
         if (gazeSampleCount < 30) return 'low_sample_count'
         if (gazeSamplingRateHz < 10) return 'low_sampling_rate'
         return 'usable'
+    }
+
+    function getTrialDurationFlag(reactionTimeMs) {
+        if (reactionTimeMs < 2000) return 'too_short'
+        if (reactionTimeMs > 7000) return 'too_long'
+        return 'expected'
     }
 
     // Called when the user selects an answer
@@ -268,6 +328,8 @@ function GameSession({ participant, onLogout }) {
 
         // Calculate reaction time from trial start to button click
         const reactionTimeMs = Math.round(performance.now() - trialStartTime.current)
+
+        const trialDurationFlag = getTrialDurationFlag(reactionTimeMs)
 
         const gazeDurationMs = reactionTimeMs
 
@@ -285,6 +347,7 @@ function GameSession({ participant, onLogout }) {
             stimulus: currentStimulus,
             selectedEmotion,
             reactionTimeMs,
+            trialDurationFlag,
             gazeSampleCount,
             gazeDurationMs,
             gazeSamplingRateHz,
