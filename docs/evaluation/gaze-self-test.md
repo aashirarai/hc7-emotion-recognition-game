@@ -292,3 +292,42 @@ AOI area ratios and AOI enrichment should be used in future analysis to address 
 - Run a cursor-supported condition to compare against no-cursor movement.
 - Add a simple calibration/check mode if time allows.
 - Treat true upper/lower face AOIs as future work unless face detection or face-box metadata is added.
+
+## Self-test 4: Controlled AOI validation
+
+### Conditions
+
+- 2 runs looking at the stimulus image
+- 2 runs looking away
+- 2 runs looking at the image with no cursor movement
+- 2 runs with cursor-supported viewing
+- 10 trials per run
+
+### Summary table
+
+| Condition | Trials | Mean image dwell | Mean card dwell | Mean upper-image dwell | Mean lower-image dwell | Mean sampling rate | Timing/quality |
+|---|---:|---:|---:|---:|---:|---:|---|
+| Cursor supported | 20 | 75.2% | 75.4% | 19.2% | 55.9% | 31.2 Hz | 20/20 usable, 20/20 expected |
+| No cursor | 20 | 70.0% | 70.3% | 25.1% | 44.9% | 35.8 Hz | 20/20 usable, 20/20 expected |
+| Looking at | 20 | 60.4% | 60.7% | 8.2% | 52.2% | 30.9 Hz | 20/20 usable, 20/20 expected |
+| Looking away | 20 | 22.7% | 22.9% | 5.1% | 17.6% | 32.5 Hz | 20/20 usable, 20/20 expected |
+
+### Interpretation
+
+The Tier 3 validation showed clear separation between looking-at and looking-away conditions. Mean image-level dwell was 60.4% when looking at the image and 22.7% when looking away, a difference of approximately 37.7 percentage points. This suggests that the image-level AOI metric can distinguish broad stimulus-directed attention from deliberate looking away under controlled self-test conditions.
+
+The no-cursor condition also produced high image dwell at 70.0%, while the cursor-supported condition produced 75.2%. This suggests that cursor movement may modestly improve WebGazer predictions, but the signal does not depend entirely on cursor support.
+
+Card-level and image-level AOIs behaved almost identically across all conditions, suggesting that the rendered image and stimulus card are very similar in size under the current layout. The image-level AOI is therefore retained, but the card/image distinction may not be meaningful unless the layout changes.
+
+Upper/lower image dwell was measurable, but lower-image dwell was consistently higher than upper-image dwell across conditions. This may reflect gaze behaviour, WebGazer bias, cursor/response behaviour, or the fact that the image split is not based on detected facial landmarks. These fields should therefore be treated as exploratory image-region metrics rather than upper/lower face AOIs.
+
+All 80 trials were marked as `usable` by the gaze quality flag and `expected` by the trial duration flag, making this the cleanest validation dataset so far.
+
+### Additional observation: lower-image bias
+
+During the Tier 3 validation, lower-image dwell was consistently higher than upper-image dwell across conditions. This was unexpected because the tester reported usually looking at the eyes or central face region during the looking-at-image, no-cursor, and cursor-supported conditions.
+
+This suggests that the upper/lower image split may be affected by a systematic vertical bias in WebGazer predictions, cursor/click calibration effects, camera angle, or the fact that the image split is not based on detected facial landmarks. Therefore, upper/lower image dwell should not currently be interpreted as true upper/lower face attention.
+
+This observation will inform the next stage of development. In particular, calibration/check mode should assess not only overall gaze error, but also whether predictions show a consistent vertical offset.
