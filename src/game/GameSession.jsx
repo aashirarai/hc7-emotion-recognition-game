@@ -4,6 +4,7 @@ import { stimuli } from '../stimuli/stimuliManifest'
 import { requestWebcamPermission } from '../gaze/requestWebcamPermission'
 import { startWebGazer, stopWebGazer } from '../gaze/webgazerService'
 // import WebcamPreview from '../gaze/WebcamPreview'
+import GazeCalibrationCheck from '../gaze/GazeCalibrationCheck'
 
 import { buildAdaptiveTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
 import { computeSessionComposite } from '../adaptive/scoring'
@@ -44,6 +45,9 @@ function GameSession({ participant, onLogout }) {
 
     // Tracks whether the game has entered gaze test mode
     // const [showGazeTest, setShowGazeTest] = useState(false)
+
+    const [showCalibrationCheck, setShowCalibrationCheck] = useState(false)
+    const [calibrationSummary, setCalibrationSummary] = useState(null)
 
     // Shuffled list of stimuli for the current session, generated on Start
     const [trialSequence, setTrialSequence] = useState([])
@@ -181,6 +185,55 @@ function GameSession({ participant, onLogout }) {
         setShowFeedback(false)
 
         setSessionStarted(true)
+    }
+
+    async function handleStartCalibrationCheck() {
+        const webcamResult = await requestWebcamPermission()
+
+        if (!webcamResult.webcamEnabled) {
+            alert('Webcam access is needed for the gaze check.')
+            return
+        }
+
+        // Stop the temporary permission stream
+        if (webcamResult.stream) {
+            webcamResult.stream.getTracks().forEach((track) => track.stop())
+        }
+
+        setShowCalibrationCheck(true)
+
+        const webgazerResult = await startWebGazer(handleGazeData)
+
+        if (!webgazerResult) {
+            alert('WebGazer could not be started.')
+            setShowCalibrationCheck(false)
+            return
+        }
+
+        setSessionMetadata({
+            sessionId: null,
+            startedAt: new Date().toISOString(),
+            webcamRequested: true,
+            webcamEnabled: true,
+            webcamPermissionStatus: webcamResult.webcamPermissionStatus,
+            webgazerStarted: true,
+            mode: 'calibration_check',
+        })
+    }
+
+    async function handleCalibrationComplete(summary, samples) {
+        console.log('Calibration summary:', summary)
+        console.log('Calibration samples:', samples)
+
+        setCalibrationSummary(summary)
+        
+        await stopWebGazer()
+        setShowCalibrationCheck(false)
+    }
+
+    async function handleCalibrationCancel() {
+        await stopWebGazer()
+        setShowCalibrationCheck(false)
     }
 
     function summariseGazeSamples(samples) {
@@ -353,6 +406,7 @@ function GameSession({ participant, onLogout }) {
             gazeSamplingRateHz,
             gazeQualityFlag,
             gazeSummary,
+            calibrationSummary,
         })
 
         // Create the updated full session log immediately
@@ -447,13 +501,23 @@ function GameSession({ participant, onLogout }) {
         setShowFeedback(false)
     }
 
-
+    // If the user entered gaze calibration check mode, show calibration check
+    if (showCalibrationCheck) {
+        return (
+            <GazeCalibrationCheck
+                onComplete={handleCalibrationComplete}
+                onCancel={handleCalibrationCancel}
+            />
+        )
+    }
 
     // If the session has not started, show the start screen
     if (!sessionStarted) {
         return (
             <StartScreen
                 onStart={handleStart}
+                onStartCalibrationCheck={handleStartCalibrationCheck}
+                calibrationSummary={calibrationSummary}
                 participant={participant}
                 previousSessions={sessionHistory}
                 adaptiveState={adaptiveState}

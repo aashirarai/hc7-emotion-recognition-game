@@ -1,5 +1,7 @@
 let webgazerInstance = null
 
+let latestGazePoint = null
+
 export async function startWebGazer(onGazeData) {
     try {
         console.log("Starting WebGazer...")
@@ -17,16 +19,23 @@ export async function startWebGazer(onGazeData) {
 
         webgazer
             .setGazeListener((data, elapsedTime) => {
-                // console.log("WebGazer raw data:", data)
-
                 if (!data) return
 
-                onGazeData({
+                const gazePoint = {
                     x: data.x,
                     y: data.y,
                     elapsedTime,
                     timestamp: performance.now(),
-                })
+                }
+
+                // Keep record of latest gaze point for calibration
+                // before calling onGazeData()
+                latestGazePoint = gazePoint
+                
+                if (onGazeData) {
+                    onGazeData(gazePoint)
+                }
+                
             })
 
             // Re-enable WebGazer's built-in debugging visuals
@@ -81,4 +90,8 @@ export async function stopWebGazer() {
     } finally {
         webgazerInstance = null
     }
+}
+    
+export function getLatestGazePoint() {
+    return latestGazePoint
 }

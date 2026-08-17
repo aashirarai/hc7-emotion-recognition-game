@@ -14,7 +14,8 @@ export function createTrialLog({
     gazeDurationMs = null,
     gazeSamplingRateHz = 0,
     gazeQualityFlag = 'not_computed',
-    gazeSummary = {}
+    gazeSummary = {},
+    calibrationSummary = null,
 }) {
     // Check whether the selected answer matches the correct emotion
     const isCorrect = (selectedEmotion === stimulus.emotion)
@@ -78,6 +79,17 @@ export function createTrialLog({
         upperImageDwellProp: gazeSummary.upperImageDwellProp ?? null,
         lowerImageDwellProp: gazeSummary.lowerImageDwellProp ?? null,
         upperLowerImageRatio: gazeSummary.upperLowerImageRatio ?? null,
+
+        // Calibration check metrics
+        calibrationCompleted: calibrationSummary?.calibrationCompleted ?? false,
+        calibrationTargetCount: calibrationSummary?.calibrationTargetCount ?? 0,
+        meanCalibrationErrorPx: calibrationSummary?.meanCalibrationErrorPx ?? null,
+        medianCalibrationErrorPx: calibrationSummary?.medianCalibrationErrorPx ?? null,
+        maxCalibrationErrorPx: calibrationSummary?.maxCalibrationErrorPx ?? null,
+        meanXErrorPx: calibrationSummary?.meanXErrorPx ?? null,
+        meanYErrorPx: calibrationSummary?.meanYErrorPx ?? null,
+        medianYErrorPx: calibrationSummary?.medianYErrorPx ?? null,
+        calibrationQualityFlag: calibrationSummary?.calibrationQualityFlag ?? 'not_available',
     }
 }
 

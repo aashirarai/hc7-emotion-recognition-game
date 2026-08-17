@@ -2,6 +2,8 @@ import { TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
 
 function StartScreen({
     onStart,
+    onStartCalibrationCheck,
+    calibrationSummary,
     participant,
     previousSessions,
     adaptiveState,
@@ -77,20 +79,18 @@ function StartScreen({
             </div>
 
             <div className="button-stack">
+                <button type="button" onClick={onStartCalibrationCheck}>
+                    Run gaze check
+                </button>
+
                 <button
                     className="btn-primary"
-                    onClick={() =>
-                        onStart({ webcamRequested: false })
-                    }
-                >
+                    onClick={() => onStart({ webcamRequested: false })}>
                     Start without webcam
                 </button>
 
                 <button
-                    onClick={() =>
-                        onStart({ webcamRequested: true })
-                    }
-                >
+                    onClick={() => onStart({ webcamRequested: true })}>
                     Enable webcam and start
                 </button>
             </div>
