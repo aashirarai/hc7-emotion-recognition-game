@@ -113,7 +113,7 @@ function downloadCalibrationCSV(samples, summary) {
 
 export default function GazeCalibrationCheck({ onComplete, onCancel }) {
     /**
-     * Five-point target layout.
+     * Five-point target layout with one warm-up centre point.
      * 
      * Ratios are used instead of fixed pixels so the targets adapt to
      * different screen sizes.
@@ -122,11 +122,12 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
     // useMemo lets you cache the result of a calculation
     // between re-renders
     const targets = useMemo(() => [
-            {label: 'centre', xRatio: 0.5, yRatio: 0.5},
-            {label: 'top-left', xRatio: 0.2, yRatio: 0.2},
-            {label: 'top-right', xRatio: 0.8, yRatio: 0.2},
-            {label: 'bottom-left', xRatio: 0.2, yRatio: 0.8},
-            {label: 'bottom-right', xRatio: 0.8, yRatio: 0.8},
+            {label: 'warm-up centre', xRatio: 0.5, yRatio: 0.5, isWarmUp: true},
+            {label: 'centre', xRatio: 0.5, yRatio: 0.5, isWarmUp: false},
+            {label: 'top-left', xRatio: 0.2, yRatio: 0.2, isWarmUp: false},
+            {label: 'top-right', xRatio: 0.8, yRatio: 0.2, isWarmUp: false },
+            {label: 'bottom-left', xRatio: 0.2, yRatio: 0.8, isWarmUp: false},
+            {label: 'bottom-right', xRatio: 0.8, yRatio: 0.8, isWarmUp: false},
         ],
         []
     )
@@ -136,6 +137,9 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
     const [isComplete, setIsComplete] = useState(false)
 
     const currentTarget = targets[currentTargetIndex]
+
+    const recordedTargets = targets.filter((target) => !target.isWarmUp)
+    const recordedTargetNumber = targets.slice(0, currentTargetIndex + 1).filter((target) => !target.isWarmUp).length
 
     // Recalculate the summary whenever samples change
     const summary = summariseCalibration(samples)
@@ -190,7 +194,10 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
             timestamp: performance.now(),
         }
 
-        const updatedSamples = [...samples, newSample]
+        // Warm-up targets are used to let WebGazer settle, but are not included
+        // in the exported samples or calibration summary
+        const updatedSamples = currentTarget.isWarmUp ? samples : [...samples, newSample]
+        
         setSamples(updatedSamples)
 
         if (currentTargetIndex === targets.length - 1) {
@@ -309,10 +316,17 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
                 Look directly at the dot, hold your gaze briefly, then click it.
             </p>
 
-            <p>
-                Target {currentTargetIndex + 1} of {targets.length}:{' '}
-                <strong>{currentTarget.label}</strong>
-            </p>
+            {currentTarget.isWarmUp ? (
+                <p>
+                    Warm-up target:{' '}
+                    <strong>{currentTarget.label}</strong>
+                </p>
+            ) : (
+                <p>
+                    Recorded target {recordedTargetNumber} of {recordedTargets.length}:{' '}
+                    <strong>{currentTarget.label}</strong>
+                </p>
+            )}
 
             <button
                 type="button"

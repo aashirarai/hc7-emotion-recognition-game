@@ -331,3 +331,34 @@ During the Tier 3 validation, lower-image dwell was consistently higher than upp
 This suggests that the upper/lower image split may be affected by a systematic vertical bias in WebGazer predictions, cursor/click calibration effects, camera angle, or the fact that the image split is not based on detected facial landmarks. Therefore, upper/lower image dwell should not currently be interpreted as true upper/lower face attention.
 
 This observation will inform the next stage of development. In particular, calibration/check mode should assess not only overall gaze error, but also whether predictions show a consistent vertical offset.
+
+## Self-test 5: Calibration/check mode
+
+### Conditions
+
+- 5 calibration/check runs
+- 5 targets per run
+- Targets: centre, top-left, top-right, bottom-left, bottom-right
+- One webcam-enabled looking-at-image session after the latest calibration check
+
+### Calibration summary
+
+| Run | Mean error | Median error | Mean x-error | Mean y-error | Quality |
+|---|---:|---:|---:|---:|---|
+| Calibration 1 | 205.2 px | 172.3 px | +4.5 px | -44.7 px | poor |
+| Calibration 2 | 84.6 px | 60.4 px | +21.1 px | -43.8 px | excellent |
+| Calibration 3 | 175.6 px | 113.4 px | -34.4 px | +9.3 px | usable |
+| Calibration 4 | 178.2 px | 174.5 px | +92.8 px | -38.9 px | usable |
+| Calibration 5 | 113.4 px | 113.9 px | -34.4 px | -27.2 px | usable |
+
+Across all calibration targets, mean error was 151.4 px and median error was 113.4 px. Mean x-error was +9.9 px and mean y-error was -29.1 px. This means that, overall, WebGazer predictions were slightly rightward and above the target, rather than consistently below it.
+
+### Interpretation
+
+The calibration/check mode successfully exported per-target prediction error and session-level summary fields. Repeated calibration attempts produced different quality levels, ranging from poor to excellent/usable. This supports including a quality-check step rather than assuming that a single WebGazer calibration is reliable.
+
+The lower-image dwell bias observed in earlier AOI validation was not explained by a simple downward vertical offset. In the final calibration run, mean y-error was -27.2 px, meaning predictions were slightly above targets on average, but the following looking-at-image game session still showed higher lower-image dwell than upper-image dwell.
+
+This suggests that upper/lower image dwell should remain exploratory. The lower-image pattern may reflect task-specific cursor or response behaviour, limitations of splitting the rendered image rather than the detected face, or non-uniform WebGazer error across screen regions.
+
+The centre target had the highest mean error across calibration runs, which may indicate that the first target is affected by WebGazer warm-up. A possible next improvement is to include an initial unrecorded warm-up target before calculating calibration summary metrics.
