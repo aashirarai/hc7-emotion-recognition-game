@@ -48,6 +48,8 @@ function GameSession({ participant, onLogout }) {
 
     const [showCalibrationCheck, setShowCalibrationCheck] = useState(false)
     const [calibrationSummary, setCalibrationSummary] = useState(null)
+    const [calibrationMode, setCalibrationMode] = useState(null)
+    const [pendingWebcamSession, setPendingWebcamSession] = useState(null)
 
     // Shuffled list of stimuli for the current session, generated on Start
     const [trialSequence, setTrialSequence] = useState([])
@@ -137,88 +139,118 @@ function GameSession({ participant, onLogout }) {
             adaptiveState.tierIndex,
         )
 
-        let webcamEnabled = false
-        let webcamPermissionStatus = 'not_requested'
-        let stream = null
-        let webgazerStarted = false
+        // Non-webcam session: start immediately
+        if (!webcamRequested) {
+            setSessionId(newSessionId)
+            setTrialSequence(newTrialSequence)
+            setWebcamStream(null)
 
-        // Request webcam access only when the participant selected it.
-        if (webcamRequested) {
-            const webcamResult = await requestWebcamPermission()
+            setSessionMetadata({
+                sessionId: newSessionId,
+                startedAt: new Date().toISOString(),
+                webcamRequested: false,
+                webcamEnabled: false,
+                webcamPermissionStatus: 'not_requested',
+                webgazerStarted: false,
+                mode: 'normal_no_webcam',
+            })
 
-            webcamEnabled = webcamResult.webcamEnabled
-            webcamPermissionStatus =
-                webcamResult.webcamPermissionStatus
-            stream = webcamResult.stream
+            setSessionComplete(false)
+            setCurrentTrialIndex(0)
+            setTrialLogs([])
+            setLastTrialLog(null)
+            setShowFeedback(false)
+
+            setSessionStarted(true)
+            return
         }
 
-        // WebGazer will manage its own webcam stream, so stop the
-        // temporary stream used during the permission request.
-        if (webcamEnabled) {
-            if (stream) {
-                stream.getTracks().forEach((track) => track.stop())
-                stream = null
+        // Webcam session: run gaze setup before starting trials
+        try {
+            const webcamResult = await requestWebcamPermission()
+
+            if (!webcamResult.webcamEnabled) {
+                alert('Webcam access is needed to start with gaze tracking.')
+                return
+            }
+
+            if (webcamResult.stream) {
+                webcamResult.stream.getTracks().forEach((track) => track.stop())
             }
 
             const webgazerResult = await startWebGazer(handleGazeData)
-            webgazerStarted = Boolean(webgazerResult)
+
+            if (!webgazerResult) {
+                alert('WebGazer could not be started. You can start without webcam instead.')
+                return
+            }
+
+            // Stored the prepared session until the gaze setup is complete
+            setPendingWebcamSession({
+                sessionId: newSessionId,
+                trialSequence: newTrialSequence,
+                webcamPermissionStatus: webcamResult.webcamPermissionStatus,
+            })
+
+            setSessionMetadata({
+                sessionId: newSessionId,
+                startedAt: new Date().toISOString(),
+                webcamRequested: true,
+                webcamEnabled: true,
+                webcamPermissionStatus: webcamResult.webcamPermissionStatus,
+                webgazerStarted: true,
+                mode: 'pre_game_gaze_setup',
+            })
+
+            setCalibrationMode('pre_game')
+            setShowCalibrationCheck(true)
+        } catch (error) {
+            console.error('Failed to start webcam session:', error)
+            alert('Failed to start webcam session.')
         }
-
-        setSessionId(newSessionId)
-        setTrialSequence(newTrialSequence)
-
-        setWebcamStream(stream)
-        setSessionMetadata({
-            sessionId: newSessionId,
-            startedAt: new Date().toISOString(),
-            webcamRequested,
-            webcamEnabled,
-            webcamPermissionStatus,
-            webgazerStarted,
-        })
-
-        // Reset the game state for the new session.
-        setSessionComplete(false)
-        setCurrentTrialIndex(0)
-        setTrialLogs([])
-        setLastTrialLog(null)
-        setShowFeedback(false)
-
-        setSessionStarted(true)
     }
 
     async function handleStartCalibrationCheck() {
-        const webcamResult = await requestWebcamPermission()
+        try {
+            const webcamResult = await requestWebcamPermission()
 
-        if (!webcamResult.webcamEnabled) {
-            alert('Webcam access is needed for the gaze check.')
-            return
-        }
+            if (!webcamResult.webcamEnabled) {
+                alert('Webcam access is needed for the gaze check.')
+                return
+            }
 
-        // Stop the temporary permission stream
-        if (webcamResult.stream) {
-            webcamResult.stream.getTracks().forEach((track) => track.stop())
-        }
+            if (webcamResult.stream) {
+                webcamResult.stream.getTracks().forEach((track) => track.stop())
+            }
 
-        setShowCalibrationCheck(true)
+            setCalibrationMode('standalone')
+            setShowCalibrationCheck(true)
 
-        const webgazerResult = await startWebGazer(handleGazeData)
+            const webgazerResult = await startWebGazer(handleGazeData)
 
-        if (!webgazerResult) {
-            alert('WebGazer could not be started.')
+            if (!webgazerResult) {
+                alert('WebGazer could not be started.')
+                setShowCalibrationCheck(false)
+                setCalibrationMode(null)
+                return
+            }
+
+            setSessionMetadata({
+                sessionId: null,
+                startedAt: new Date().toISOString(),
+                webcamRequested: true,
+                webcamEnabled: true,
+                webcamPermissionStatus: webcamResult.webcamPermissionStatus,
+                webgazerStarted: true,
+                mode: 'standalone_gaze_check',
+            })
+
+        } catch (error) {
+            console.error('Failed to start gaze check:', error)
+            alert('Failed to start gaze check.')
             setShowCalibrationCheck(false)
-            return
+            setCalibrationMode(null)
         }
-
-        setSessionMetadata({
-            sessionId: null,
-            startedAt: new Date().toISOString(),
-            webcamRequested: true,
-            webcamEnabled: true,
-            webcamPermissionStatus: webcamResult.webcamPermissionStatus,
-            webgazerStarted: true,
-            mode: 'calibration_check',
-        })
     }
 
     async function handleCalibrationComplete(summary, samples) {
@@ -226,14 +258,71 @@ function GameSession({ participant, onLogout }) {
         console.log('Calibration samples:', samples)
 
         setCalibrationSummary(summary)
-        
-        await stopWebGazer()
         setShowCalibrationCheck(false)
+
+        // Pre-game gaze setup
+        if (calibrationMode === 'pre_game') {
+            if (!pendingWebcamSession) {
+                console.error('No pending webcam session found after gaze setup.')
+                setCalibrationMode(null)
+                return
+            }
+
+            // Load pending webcam session metadata
+            setSessionId(pendingWebcamSession.sessionId)
+            setTrialSequence(pendingWebcamSession.trialSequence)
+            setWebcamStream(null)
+
+            setSessionMetadata((previousMetadata) => ({
+                ...previousMetadata,
+                mode: 'webcam_game_after_gaze_setup',
+                gazeSetupCompleted: summary.calibrationCompleted,
+                gazeSetupQualityFlag: summary.calibrationQualityFlag,
+                meanCalibrationErrorPx: summary.meanCalibrationErrorPx,
+                meanXErrorPx: summary.meanXErrorPx,
+                meanYErrorPx: summary.meanYErrorPx,
+            }))
+
+            // Initialise states before starting game
+            setSessionComplete(false)
+            setCurrentTrialIndex(0)
+            setTrialLogs([])
+            setLastTrialLog(null)
+            setShowFeedback(false)
+
+            setPendingWebcamSession(null)
+            setCalibrationMode(null)
+
+            // WebGazer stays running here
+            setSessionStarted(true)
+            return
+        }
+
+        // Standalone gaze check
+        if (calibrationMode === 'standalone') {
+            // Stop WebGazer
+            await stopWebGazer()
+            setCalibrationMode(null)
+            return
+        }
+
+        setCalibrationMode(null)
     }
 
     async function handleCalibrationCancel() {
-        await stopWebGazer()
         setShowCalibrationCheck(false)
+
+        if (calibrationMode === 'pre_game') {
+            await stopWebGazer()
+            setPendingWebcamSession(null)
+            setSessionMetadata(null)
+        }
+
+        if (calibrationMode === 'standalone') {
+            await stopWebGazer()
+        }
+
+        setCalibrationMode(null)
     }
 
     function summariseGazeSamples(samples) {
@@ -505,6 +594,7 @@ function GameSession({ participant, onLogout }) {
     if (showCalibrationCheck) {
         return (
             <GazeCalibrationCheck
+                mode={calibrationMode}
                 onComplete={handleCalibrationComplete}
                 onCancel={handleCalibrationCancel}
             />

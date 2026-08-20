@@ -111,7 +111,7 @@ function downloadCalibrationCSV(samples, summary) {
     URL.revokeObjectURL(url)
 }
 
-export default function GazeCalibrationCheck({ onComplete, onCancel }) {
+export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, onCancel }) {
     /**
      * Five-point target layout with one warm-up centre point.
      * 
@@ -236,7 +236,7 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
     if (isComplete) {
         return (
             <main className="calibration-check-screen">
-                <h1>Gaze check complete</h1>
+                <h1>{mode === 'pre_game' ? 'Gaze setup complete': 'Gaze gaze complete'}</h1>
 
                 <p>
                     This check estimates WebGazer prediction error and directional
@@ -291,11 +291,11 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
                     </button>
 
                     <button type="button" onClick={handleRetry}>
-                        Retry gaze check
+                        {mode === 'pre_game' ? 'Retry setup' : 'Retry gaze check'}
                     </button>
 
                     <button type="button" onClick={handleFinish}>
-                        Finish gaze check
+                        {mode === 'pre_game' ? 'Start game' : 'Finish gaze check'}
                     </button>
 
                 </div>
@@ -310,10 +310,12 @@ export default function GazeCalibrationCheck({ onComplete, onCancel }) {
      */
     return (
         <main className="calibration-check-screen">
-            <h1>Gaze check</h1>
+            <h1>{mode === 'pre_game' ? 'Gaze setup' : 'Gaze check'}</h1>
 
             <p>
-                Look directly at the dot, hold your gaze briefly, then click it.
+                {mode === 'pre_game'
+                    ? 'Before the game starts, follow the dot so the webcam gaze tracker can check that it is working.'
+                    : 'Look directly at the dot, hold your gaze briefly, then click it.'}
             </p>
 
             {currentTarget.isWarmUp ? (
