@@ -50,6 +50,17 @@ p  { margin: 0; }
   gap: 1.5rem;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .card {
+    animation: card-in 0.25s ease-out;
+  }
+}
+
+@keyframes card-in {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
 /* ─── Buttons ─── */
 button {
   cursor: pointer;
@@ -63,6 +74,12 @@ button {
 
 button:active { transform: scale(0.97); }
 
+button:focus-visible,
+input:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
 .btn-primary {
   background: var(--primary);
   color: #fff;
@@ -75,12 +92,23 @@ button:active { transform: scale(0.97); }
   color: var(--text);
   border: 1.5px solid var(--border);
   text-transform: capitalize;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  min-height: 68px;
+  font-size: 1.1rem;
 }
 
 .btn-emotion:hover {
   border-color: var(--primary);
   color: var(--primary);
   background: #eef2ff;
+}
+
+.btn-emotion-icon {
+  font-size: 1.5rem;
+  line-height: 1;
 }
 
 /* ─── Stimulus card ─── */
@@ -101,12 +129,18 @@ button:active { transform: scale(0.97); }
   object-fit: contain;
 }
 
-/* ─── Emotion button grid (3 × 2) ─── */
+/* ─── Emotion button grid (3 × 2, +1 centered) ─── */
 .button-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 0.75rem;
   margin-top: 0.75rem;
+}
+
+/* A 7th option would otherwise sit alone on the left of a new row —
+   center it instead, regardless of which emotion ends up in that slot. */
+.button-grid > button:nth-child(7):last-child {
+  grid-column: 2;
 }
 
 /* ─── Progress bar ─── */
@@ -123,10 +157,11 @@ button:active { transform: scale(0.97); }
 }
 
 .progress-track {
-  height: 6px;
+  position: relative;
+  height: 10px;
   background: var(--border);
   border-radius: 99px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .progress-fill {
@@ -134,6 +169,34 @@ button:active { transform: scale(0.97); }
   background: var(--primary);
   border-radius: 99px;
   transition: width 0.3s ease;
+  overflow: hidden;
+}
+
+.progress-milestone {
+  position: absolute;
+  top: 50%;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--surface);
+  border: 2px solid var(--border);
+  transform: translate(-50%, -50%);
+  transition: border-color 0.2s ease, background 0.2s ease;
+}
+
+.progress-milestone-reached {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.streak-badge {
+  align-self: flex-start;
+  background: #fef3c7;
+  color: #b45309;
+  font-size: 0.85rem;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 99px;
 }
 
 /* ─── Feedback ─── */
@@ -144,8 +207,20 @@ button:active { transform: scale(0.97); }
   font-weight: 600;
 }
 
-.feedback-banner.correct   { background: #dcfce7; color: var(--correct); }
+.feedback-banner.correct   { background: #dcfce7; color: var(--correct); position: relative; overflow: visible; }
 .feedback-banner.incorrect { background: #fee2e2; color: var(--incorrect); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .feedback-banner.incorrect {
+    animation: gentle-shake 0.4s ease;
+  }
+}
+
+@keyframes gentle-shake {
+  0%, 100% { transform: translateX(0); }
+  25%      { transform: translateX(-4px); }
+  75%      { transform: translateX(4px); }
+}
 
 .feedback-details {
   display: flex;
@@ -155,6 +230,59 @@ button:active { transform: scale(0.97); }
 }
 
 .feedback-details strong { color: var(--text); }
+
+/* ─── Celebration burst (correct answers) ─── */
+.celebration-static {
+  position: absolute;
+  top: -0.4rem;
+  right: 0.5rem;
+  font-size: 1.5rem;
+}
+
+.celebration-burst {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: visible;
+}
+
+.confetti-piece {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  border-radius: 2px;
+  transform: translate(-50%, -50%);
+}
+
+.confetti-color-1 { background: var(--confetti-1, var(--primary)); }
+.confetti-color-2 { background: var(--confetti-2, var(--primary)); }
+.confetti-color-3 { background: var(--confetti-3, var(--primary)); }
+.confetti-color-4 { background: var(--confetti-4, var(--primary)); }
+
+@media (prefers-reduced-motion: no-preference) {
+  .confetti-piece {
+    animation: confetti-pop 0.7s ease-out both;
+    animation-delay: var(--delay, 0ms);
+  }
+}
+
+@keyframes confetti-pop {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) rotate(0deg);
+  }
+  100% {
+    opacity: 0;
+    transform:
+      translate(
+        calc(-50% + var(--dx, 0px)),
+        calc(-50% + var(--dy, 0px))
+      )
+      rotate(180deg);
+  }
+}
 
 /* ─── Login screen ─── */
 .login-form {
@@ -254,6 +382,68 @@ pre {
   display: flex;
   flex-direction: column;
   gap: 0.75rem;
+}
+
+/* ─── Theme picker ─── */
+.theme-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.theme-picker-label {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.theme-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+  gap: 0.6rem;
+}
+
+.theme-swatch {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.75rem 0.5rem;
+  border: 2.5px solid var(--border);
+  border-radius: var(--radius);
+}
+
+.theme-swatch-active {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+.theme-swatch-icon {
+  font-size: 1.75rem;
+  line-height: 1;
+}
+
+.theme-swatch-name {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ─── Star rating (session summary) ─── */
+.star-rating {
+  text-align: center;
+}
+
+.star-rating-stars {
+  font-size: 2rem;
+  letter-spacing: 0.2rem;
+}
+
+.star-rating-label {
+  margin-top: 0.25rem;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--primary);
 }
 
 /* ─── Guardian dashboard: session table ─── */

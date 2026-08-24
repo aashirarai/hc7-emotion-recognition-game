@@ -57,6 +57,12 @@ export function buildAdaptiveTrialSequence(stimuli, count, tierIndex) {
     return buildTrialSequence(pool, count)
 }
 
+// Returns a shuffled copy of the answer options shown on a trial, so the
+// correct answer doesn't always land in the same on-screen position.
+export function shuffleAnswerOptions(options) {
+    return [...options].sort(() => Math.random() - 0.5)
+}
+
 // Converts the trial logs array into CSV text
 export function convertLogsToCSV(logs) {
     if (logs.length == 0) return ""

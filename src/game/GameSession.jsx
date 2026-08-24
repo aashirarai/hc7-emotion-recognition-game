@@ -1,11 +1,12 @@
 import { useEffect, useRef, useState } from 'react'
 
-import { stimuli } from '../stimuli/stimuliManifest'
+import { emotionOptions, stimuli } from '../stimuli/stimuliManifest'
 
-import { buildAdaptiveTrialSequence, createSessionId, createTrialLog, downloadCSV } from './gameLogic'
+import { buildAdaptiveTrialSequence, createSessionId, createTrialLog, downloadCSV, shuffleAnswerOptions } from './gameLogic'
 import { computeSessionComposite } from '../adaptive/scoring'
 import { applyAdaptiveUpdate, TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
 import { addSessionResult, getAdaptiveState, saveTrialLogs, updateAdaptiveState } from '../data/participantStore'
+import { computeCurrentStreak, getStarRating, STAR_RATING_LABELS } from './gamification'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -48,6 +49,13 @@ function GameSession({ participant, onLogout }) {
     // Stores the most recent trial log so the feedback screen can display it
     const [lastTrialLog, setLastTrialLog] = useState(null)
 
+    // Cosmetic-only: consecutive correct answers so far this session
+    const [currentStreak, setCurrentStreak] = useState(0)
+
+    // Answer button order for the current trial, reshuffled every trial so
+    // the correct answer doesn't always land in the same on-screen spot
+    const [currentOptions, setCurrentOptions] = useState(emotionOptions)
+
     // Controls whether the feedback screen is shown
     const [showFeedback, setShowFeedback] = useState(false)
 
@@ -85,6 +93,8 @@ function GameSession({ participant, onLogout }) {
         setTrialLogs([])
         setLastTrialLog(null)
         setShowFeedback(false)
+        setCurrentStreak(0)
+        setCurrentOptions(shuffleAnswerOptions(emotionOptions))
     }
 
     // Called when the user selects an answer
@@ -113,6 +123,9 @@ function GameSession({ participant, onLogout }) {
 
         // Store the most recent trial log for the feedback screen
         setLastTrialLog(log)
+
+        // Cosmetic-only streak counter, derived from the updated logs
+        setCurrentStreak(computeCurrentStreak(updatedLogs))
 
         // Show feedback
         setShowFeedback(true)
@@ -167,6 +180,9 @@ function GameSession({ participant, onLogout }) {
         // Hide feedback and clear the previous trial log
         setShowFeedback(false)
         setLastTrialLog(null)
+
+        // Reshuffle the answer button order for the new trial
+        setCurrentOptions(shuffleAnswerOptions(emotionOptions))
     }
 
     // Resets everything and returns to the start screen
@@ -178,6 +194,7 @@ function GameSession({ participant, onLogout }) {
         setTrialLogs([])
         setLastTrialLog(null)
         setShowFeedback(false)
+        setCurrentStreak(0)
     }
 
 
@@ -199,9 +216,16 @@ function GameSession({ participant, onLogout }) {
     if (sessionComplete) {
         const { correctCount, totalTrials: total, compositeScore, meanReactionTimeMs } =
             computeSessionComposite(trialLogs)
+        const starRating = getStarRating(compositeScore)
 
         return (
             <div className="card">
+                <div className="star-rating">
+                    <div className="star-rating-stars" aria-hidden="true">
+                        {'⭐'.repeat(starRating)}{'☆'.repeat(3 - starRating)}
+                    </div>
+                    <p className="star-rating-label">{STAR_RATING_LABELS[starRating]}</p>
+                </div>
                 <div>
                     <div className="score-value">{correctCount} / {total}</div>
                     <p className="score-label">correct answers</p>
@@ -243,6 +267,7 @@ function GameSession({ participant, onLogout }) {
             lastTrialLog={lastTrialLog}
             onNext={handleNext}
             isFinalTrial={currentTrialIndex === totalTrials - 1}
+            onLogout={onLogout}
             />
         )
     }
@@ -254,6 +279,8 @@ function GameSession({ participant, onLogout }) {
         trialNumber={currentTrialIndex + 1}
         totalTrials={totalTrials}
         onAnswer={handleAnswer}
+        streak={currentStreak}
+        options={currentOptions}
         />
     )
 }
