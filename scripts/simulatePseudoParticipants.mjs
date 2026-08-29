@@ -388,6 +388,18 @@ function deltaCellsDiffer(a, b) {
     return n
 }
 
+// Renders a 7x7 matrix as an aligned table (rows = true emotion, columns =
+// selected emotion), e.g. for printing straight to the terminal.
+function formatMatrix(matrix) {
+    const colWidth = 9
+    const rowLabelWidth = 10
+    const header = ' '.repeat(rowLabelWidth) + EMOTIONS.map((e) => e.padStart(colWidth)).join('')
+    const rows = matrix.map((row, r) =>
+        EMOTIONS[r].padEnd(rowLabelWidth) + row.map((v) => String(v).padStart(colWidth)).join('')
+    )
+    return [header, ...rows].join('\n')
+}
+
 // ─── Per-profile pipeline ────────────────────────────────────────────────────
 
 async function runProfile(profile, spec) {
@@ -557,6 +569,20 @@ async function main() {
     for (const r of reports) {
         const pass = r.diffCells === 0 ? '✓ matrix exact' : `⚠ ${r.diffCells} cells differ`
         console.log(`  ${r.profileId.padEnd(16)} cosine=${r.cosineSimilarity.toFixed(4)}  ${pass.padEnd(18)} final tier: ${r.finalTierLabel}`)
+    }
+
+    console.log(`\n${bar}`)
+    console.log('CONFUSION MATRICES  (rows = true emotion, columns = selected emotion)')
+    console.log(bar)
+    for (const r of reports) {
+        console.log(`\n${r.label}  (${r.participantId})  diffCells=${r.diffCells}  cosine=${r.cosineSimilarity.toFixed(4)}`)
+        console.log(formatMatrix(r.observedMatrix))
+        if (r.diffCells > 0) {
+            console.log('\n  intended (expected):')
+            console.log(formatMatrix(r.intendedMatrix))
+        } else {
+            console.log('  (intended matrix matches observed cell-for-cell)')
+        }
     }
 
     console.log(`\n${bar}`)
