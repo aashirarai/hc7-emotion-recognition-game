@@ -95,3 +95,14 @@ export async function stopWebGazer() {
 export function getLatestGazePoint() {
     return latestGazePoint
 }
+
+export function setWebGazerDebugVisuals(visible) {
+    const webgazer = window.webgazer
+
+    if (!webgazer) return
+
+    webgazer.showVideo(visible)
+    webgazer.showPredictionPoints(visible)
+    webgazer.showFaceFeedbackBox(visible)
+    webgazer.showFaceOverlay(visible)
+}

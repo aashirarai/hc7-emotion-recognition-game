@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 
 import { stimuli } from '../stimuli/stimuliManifest'
 import { requestWebcamPermission } from '../gaze/requestWebcamPermission'
-import { startWebGazer, stopWebGazer } from '../gaze/webgazerService'
+import { startWebGazer, stopWebGazer, setWebGazerDebugVisuals } from '../gaze/webgazerService'
 // import WebcamPreview from '../gaze/WebcamPreview'
 import GazeCalibrationCheck from '../gaze/GazeCalibrationCheck'
 
@@ -185,6 +185,8 @@ function GameSession({ participant, onLogout }) {
                 return
             }
 
+            setWebGazerDebugVisuals(true)
+
             // Stored the prepared session until the gaze setup is complete
             setPendingWebcamSession({
                 sessionId: newSessionId,
@@ -234,6 +236,8 @@ function GameSession({ participant, onLogout }) {
                 setCalibrationMode(null)
                 return
             }
+
+            setWebGazerDebugVisuals(true)
 
             setSessionMetadata({
                 sessionId: null,
@@ -293,7 +297,10 @@ function GameSession({ participant, onLogout }) {
             setPendingWebcamSession(null)
             setCalibrationMode(null)
 
-            // WebGazer stays running here
+            // WebGazer stays running here;
+            // debug visuals are hidden
+            setWebGazerDebugVisuals(false)
+
             setSessionStarted(true)
             return
         }
@@ -667,13 +674,17 @@ function GameSession({ participant, onLogout }) {
             onNext={handleNext}
             isFinalTrial={currentTrialIndex === totalTrials - 1}
             />
-        )
+         )
     }
 
     // Otherwise, show the active trial
     return (
     <>
-        {/**<WebcamPreview stream={webcamStream} />**/}
+        {sessionMetadata?.webgazerStarted && (
+            <div className="gaze-status-chip">
+                <span className="gaze-status-dot" />
+            </div>
+        )}
 
         <TrialScreen
             stimulus={currentStimulus}

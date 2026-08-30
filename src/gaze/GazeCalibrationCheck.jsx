@@ -136,6 +136,10 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
     const [samples, setSamples] = useState([])
     const [isComplete, setIsComplete] = useState(false)
 
+    const [hasStarted, setHasStarted] = useState(false)
+    const [clickedTargetIndex, setClickedTargetIndex] = useState(null)
+    const [targetBurst, setTargetBurst] = useState(null)
+
     const currentTarget = targets[currentTargetIndex]
 
     const recordedTargets = targets.filter((target) => !target.isWarmUp)
@@ -199,12 +203,28 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
         const updatedSamples = currentTarget.isWarmUp ? samples : [...samples, newSample]
         
         setSamples(updatedSamples)
+        setClickedTargetIndex(currentTargetIndex)
 
-        if (currentTargetIndex === targets.length - 1) {
-            setIsComplete(true)
-        } else {
-            setCurrentTargetIndex(currentTargetIndex + 1)
-        }
+        setTargetBurst({
+            xRatio: currentTarget.xRatio,
+            yRatio: currentTarget.yRatio,
+            key: `${currentTargetIndex}-${Date.now()}`,
+        })
+
+        // Add tiny delay so that click animation can play
+        window.setTimeout(() => {
+            setClickedTargetIndex(null)
+
+            if (currentTargetIndex === targets.length - 1) {
+                setIsComplete(true)
+            } else {
+                setCurrentTargetIndex(currentTargetIndex + 1)
+            }
+        }, 180)
+
+        window.setTimeout(() => {
+            setTargetBurst(null)
+        }, 850)
     }
 
     /**
@@ -226,6 +246,43 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
         setCurrentTargetIndex(0)
         setSamples([])
         setIsComplete(false)
+        setClickedTargetIndex(null)
+        setHasStarted(true)
+    }
+
+    if(!hasStarted) {
+        return (
+            <main className="calibration-check-screen">
+                <section className="card calibration-card">
+                    <h1>{mode === 'pre_game' ? 'Focus check' : 'Gaze check'}</h1>
+
+                    <p className="calibration-intro">
+                        {mode === 'pre_game'
+                            ? 'Before the game starts, follow each dot so the webcam gaze tracker can check that it is working.'
+                            : 'This check estimates how accurately the webcam gaze tracker is working.'}
+                    </p>
+
+                    <p className="calibration-privacy-note">
+                        Webcam video is not stored. Only gaze-position estimates and setup-quality metrics are recorded.
+                    </p>
+
+                    <div className="calibration-target-info">
+                        <p className="calibration-step-label">What to do</p>
+                        <p className="calibration-step-text">
+                            Look at each dot, hold you gaze briefly, then click it when ready.
+                        </p>
+                    </div>
+
+                    <button type="button" className="btn-primary" onClick={() => setHasStarted(true)}>
+                        {mode === 'pre_game' ? 'Start focus check' : 'Start gaze check'}
+                    </button>
+
+                    {onCancel && (
+                        <button type="button" onClick={onCancel}>Cancel</button>
+                    )}
+                </section>
+            </main>
+        )
     }
 
     /**
@@ -236,12 +293,21 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
     if (isComplete) {
         return (
             <main className="calibration-check-screen">
-                <h1>{mode === 'pre_game' ? 'Gaze setup complete': 'Gaze gaze complete'}</h1>
+                <h1>{mode === 'pre_game' ? 'Ready to play': 'Gaze check complete'}</h1>
 
-                <p>
-                    This check estimates WebGazer prediction error and directional
-                    x/y offset.
-                </p>
+                <div className={`calibration-quality-badge quality-${summary.calibrationQualityFlag}`}>
+                    Tracking quality: {summary.calibrationQualityFlag}
+                </div>
+
+                {mode === 'pre_game' && summary.calibrationQualityFlag === 'poor' && (
+                    <div className="calibration-warning">
+                        <strong>Tracking quality was poor.</strong>
+                        <p>
+                            For better gaze data, retry setup. You can still start the game,
+                            but gaze measures from this session may be less reliable.
+                        </p>
+                    </div>
+                )}
 
                 <section className="calibration-summary">
                     <p>
@@ -287,21 +353,34 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
 
                 <div className="calibration-actions">
                     <button type="button" onClick={handleDownload}>
-                        Download calibration CSV
+                        Download setup CSV
                     </button>
 
                     <button type="button" onClick={handleRetry}>
                         {mode === 'pre_game' ? 'Retry setup' : 'Retry gaze check'}
                     </button>
 
-                    <button type="button" onClick={handleFinish}>
-                        {mode === 'pre_game' ? 'Start game' : 'Finish gaze check'}
+                    <button type="button" className="btn-primary" onClick={handleFinish}>
+                        {mode === 'pre_game' 
+                            ? summary.calibrationQualityFlag === 'poor' 
+                                ? 'Start anyway' 
+                                : 'Start game' 
+                            : 'Finish gaze check'}
                     </button>
-
                 </div>
             </main>
         )
     }
+
+    // Confetti animation helper array
+    const calibrationConfettiPieces = [
+        {dx: '-34px', dy: '-28px', delay: '0ms', colorClass: 'confetti-color-1'},
+        {dx: '30px', dy: '-32px', delay: '20ms', colorClass: 'confetti-color-2'},
+        {dx: '-42px', dy: '18px', delay: '40ms', colorClass: 'confetti-color-3'},
+        {dx: '38px', dy: '22px', delay: '60ms', colorClass: 'confetti-color-4'},
+        {dx: '0px', dy: '-44px', delay: '80ms', colorClass: 'confetti-color-1'},
+        {dx: '0px', dy: '40px', delay: '100ms', colorClass: 'confetti-color-2'},
+    ]
 
     /**
      * Active calibration screen.
@@ -309,51 +388,76 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
      * The target dot is fixed to the viewport using the current target ratios.
      */
     return (
-        <main className="calibration-check-screen">
-            <h1>{mode === 'pre_game' ? 'Gaze setup' : 'Gaze check'}</h1>
+        <main className="calibration-target-screen">
+            <section className="calibration-floating-panel">
+                <h1>{mode === 'pre_game' ? 'Focus check' : 'Gaze check'}</h1>
 
-            <p>
-                {mode === 'pre_game'
-                    ? 'Before the game starts, follow the dot so the webcam gaze tracker can check that it is working.'
-                    : 'Look directly at the dot, hold your gaze briefly, then click it.'}
-            </p>
+                {currentTarget.isWarmUp ? (
+                    <p>
+                        <strong>Warm-up dot:</strong> Let's get the tracker ready.
+                    </p>
+                ) : (
+                    <p>
+                        <strong>Focus point {recordedTargetNumber} of {recordedTargets.length}</strong>{' '}
+                        Look at the dot, then click when ready.
+                    </p>
+                )}
 
-            {currentTarget.isWarmUp ? (
-                <p>
-                    Warm-up target:{' '}
-                    <strong>{currentTarget.label}</strong>
-                </p>
-            ) : (
-                <p>
-                    Recorded target {recordedTargetNumber} of {recordedTargets.length}:{' '}
-                    <strong>{currentTarget.label}</strong>
-                </p>
-            )}
+                <div className="calibration-progress-dots">
+                    {recordedTargets.map((target, index) => (
+                        <span
+                            key={target.label}
+                            className={index < recordedTargetNumber
+                                ? 'calibration-progress-dot-complete'
+                                : 'calibration-progress-dot'}
+                        />
+                    ))}
+                </div>
+                
+                {onCancel && (
+                    <button type="button" className="btn-link" onClick={onCancel}>Cancel</button>
+                )}
+            </section>
 
             <button
                 type="button"
-                className="calibration-target"
+                className={clickedTargetIndex === currentTargetIndex
+                        ? 'calibration-target calibration-target-clicked'
+                        : 'calibration-target'
+                }
                 onClick={handleTargetClick}
                 style={{
                     position: 'fixed',
                     left: `${currentTarget.xRatio * 100}%`,
                     top: `${currentTarget.yRatio * 100}%`,
                     transform: 'translate(-50%, -50%)',
-                    width: '36px',
-                    height: '36px',
-                    borderRadius: '50%',
-                    border: '3px solid currentColor',
-                    background: 'transparent',
-                    cursor: 'pointer',
-                    zIndex: 9999,
                 }}
                 aria-label={`Calibration target ${currentTarget.label}`}
             />
 
-            {onCancel && (
-                <button type="button" onClick={onCancel}>
-                    Cancel gaze check
-                </button>
+            {targetBurst && (
+                <div
+                    key={index}
+                    className="calibration-target-burst"
+                    style={{
+                        position: 'fixed',
+                        left: `${targetBurst.xRatio * 100}%`,
+                        top: `${targetBurst.yRatio * 100}%`,
+                        transform: 'translate(-50%, -50%)',
+                    }}
+                >
+                    {calibrationConfettiPieces.map((piece, index) => (
+                        <span
+                            key={index}
+                            className={`confetti-piece ${piece.colorClass}`}
+                            style={{
+                                '--dx': piece.dx,
+                                '--dy': piece.dy,
+                                '--delay': piece.delay,
+                            }}
+                        />
+                    ))}
+                </div>
             )}
         </main>
     )
