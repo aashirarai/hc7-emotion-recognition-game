@@ -293,81 +293,83 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
     if (isComplete) {
         return (
             <main className="calibration-check-screen">
-                <h1>{mode === 'pre_game' ? 'Ready to play': 'Gaze check complete'}</h1>
+                <section className="card calibration-card">
+                    <h1>{mode === 'pre_game' ? 'Ready to play': 'Gaze check complete'}</h1>
 
-                <div className={`calibration-quality-badge quality-${summary.calibrationQualityFlag}`}>
-                    Tracking quality: {summary.calibrationQualityFlag}
-                </div>
-
-                {mode === 'pre_game' && summary.calibrationQualityFlag === 'poor' && (
-                    <div className="calibration-warning">
-                        <strong>Tracking quality was poor.</strong>
-                        <p>
-                            For better gaze data, retry setup. You can still start the game,
-                            but gaze measures from this session may be less reliable.
-                        </p>
+                    <div className={`calibration-quality-badge quality-${summary.calibrationQualityFlag}`}>
+                        Tracking quality: {summary.calibrationQualityFlag}
                     </div>
-                )}
 
-                <section className="calibration-summary">
-                    <p>
-                        <strong>Targets:</strong>{' '}
-                        {summary.calibrationTargetCount}
-                    </p>
+                    {mode === 'pre_game' && summary.calibrationQualityFlag === 'poor' && (
+                        <div className="calibration-warning">
+                            <strong>Tracking quality was poor.</strong>
+                            <p>
+                                For better gaze data, retry setup. You can still start the game,
+                                but gaze measures from this session may be less reliable.
+                            </p>
+                        </div>
+                    )}
 
-                    <p>
-                        <strong>Mean error:</strong>{' '}
-                        {summary.meanCalibrationErrorPx?.toFixed(1)} px
-                    </p>
+                    <section className="calibration-summary">
+                        <p>
+                            <strong>Targets:</strong>{' '}
+                            {summary.calibrationTargetCount}
+                        </p>
 
-                    <p>
-                        <strong>Median error:</strong>{' '}
-                        {summary.medianCalibrationErrorPx?.toFixed(1)} px
-                    </p>
+                        <p>
+                            <strong>Mean error:</strong>{' '}
+                            {summary.meanCalibrationErrorPx?.toFixed(1)} px
+                        </p>
 
-                    <p>
-                        <strong>Max error:</strong>{' '}
-                        {summary.maxCalibrationErrorPx?.toFixed(1)} px
-                    </p>
+                        <p>
+                            <strong>Median error:</strong>{' '}
+                            {summary.medianCalibrationErrorPx?.toFixed(1)} px
+                        </p>
 
-                    <p>
-                        <strong>Mean x-error:</strong>{' '}
-                        {summary.meanXErrorPx?.toFixed(1)} px
-                    </p>
+                        <p>
+                            <strong>Max error:</strong>{' '}
+                            {summary.maxCalibrationErrorPx?.toFixed(1)} px
+                        </p>
 
-                    <p>
-                        <strong>Mean y-error:</strong>{' '}
-                        {summary.meanYErrorPx?.toFixed(1)} px
-                    </p>
+                        <p>
+                            <strong>Mean x-error:</strong>{' '}
+                            {summary.meanXErrorPx?.toFixed(1)} px
+                        </p>
 
-                    <p>
-                        <strong>Median y-error:</strong>{' '}
-                        {summary.medianYErrorPx?.toFixed(1)} px
-                    </p>
+                        <p>
+                            <strong>Mean y-error:</strong>{' '}
+                            {summary.meanYErrorPx?.toFixed(1)} px
+                        </p>
 
-                    <p>
-                        <strong>Quality:</strong>{' '}
-                        {summary.calibrationQualityFlag}
-                    </p>
+                        <p>
+                            <strong>Median y-error:</strong>{' '}
+                            {summary.medianYErrorPx?.toFixed(1)} px
+                        </p>
+
+                        <p>
+                            <strong>Quality:</strong>{' '}
+                            {summary.calibrationQualityFlag}
+                        </p>
+                    </section>
+
+                    <div className="calibration-actions">
+                        <button type="button" onClick={handleDownload}>
+                            Download setup CSV
+                        </button>
+
+                        <button type="button" onClick={handleRetry}>
+                            {mode === 'pre_game' ? 'Retry setup' : 'Retry gaze check'}
+                        </button>
+
+                        <button type="button" className="btn-primary" onClick={handleFinish}>
+                            {mode === 'pre_game' 
+                                ? summary.calibrationQualityFlag === 'poor' 
+                                    ? 'Start anyway' 
+                                    : 'Start game' 
+                                : 'Finish gaze check'}
+                        </button>
+                    </div>
                 </section>
-
-                <div className="calibration-actions">
-                    <button type="button" onClick={handleDownload}>
-                        Download setup CSV
-                    </button>
-
-                    <button type="button" onClick={handleRetry}>
-                        {mode === 'pre_game' ? 'Retry setup' : 'Retry gaze check'}
-                    </button>
-
-                    <button type="button" className="btn-primary" onClick={handleFinish}>
-                        {mode === 'pre_game' 
-                            ? summary.calibrationQualityFlag === 'poor' 
-                                ? 'Start anyway' 
-                                : 'Start game' 
-                            : 'Finish gaze check'}
-                    </button>
-                </div>
             </main>
         )
     }
@@ -437,7 +439,7 @@ export default function GazeCalibrationCheck({ mode = 'standalone', onComplete, 
 
             {targetBurst && (
                 <div
-                    key={index}
+                    key={targetBurst.key}
                     className="calibration-target-burst"
                     style={{
                         position: 'fixed',

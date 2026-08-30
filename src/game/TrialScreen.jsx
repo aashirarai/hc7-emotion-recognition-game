@@ -17,13 +17,22 @@ function StimulusDisplay({ stimulus }) {
     return null;
 }
 
-function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer }) {
+function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, gazeTrackingActive = false }) {
     const progressPct = (trialNumber / totalTrials) * 100
 
     return (
         <div className="card">
             {/* Progress */}
             <div className="progress-header">
+                {gazeTrackingActive ? (
+                    <div className="progress-gaze-chip" aria-label="Webcam gaze tracking active">
+                        <span className="progress-gaze-dot" />
+                        Webcam on
+                    </div>
+                ) : (
+                    <span />
+                )}
+
                 <div className="progress-track">
                     <div className="progress-fill" style={{ width: `${progressPct}%` }} />
                 </div>

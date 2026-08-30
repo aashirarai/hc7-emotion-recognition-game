@@ -680,17 +680,12 @@ function GameSession({ participant, onLogout }) {
     // Otherwise, show the active trial
     return (
     <>
-        {sessionMetadata?.webgazerStarted && (
-            <div className="gaze-status-chip">
-                <span className="gaze-status-dot" />
-            </div>
-        )}
-
         <TrialScreen
             stimulus={currentStimulus}
             trialNumber={currentTrialIndex + 1}
             totalTrials={totalTrials}
             onAnswer={handleAnswer}
+            gazeTrackingActive={sessionMetadata?.webgazerStarted === true}
         />
     </>
     )

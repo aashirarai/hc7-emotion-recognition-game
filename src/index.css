@@ -113,6 +113,7 @@ input:focus-visible {
 
 /* ─── Stimulus card ─── */
 .stimulus-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -146,8 +147,9 @@ input:focus-visible {
 /* ─── Progress bar ─── */
 .progress-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .progress-label {
@@ -170,6 +172,33 @@ input:focus-visible {
   border-radius: 99px;
   transition: width 0.3s ease;
   overflow: hidden;
+}
+
+.progress-gaze-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 99px;
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.progress-gaze-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--correct);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .progress-gaze-dot {
+    animation: gaze-pulse 1.4s ease-in-out infinite;
+  }
 }
 
 .progress-milestone {
@@ -756,38 +785,6 @@ pre {
 }
 
 /* ─── Active gaze tracking status ─── */
-
-.gaze-status-chip {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
-  z-index: 50;
-  display: inline-flex;
-  align-items: center;
-  gap: 0.45rem;
-  padding: 0.45rem 0.75rem;
-  border-radius: 99px;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  box-shadow: var(--shadow);
-  color: var(--text-muted);
-  font-size: 0.85rem;
-  pointer-events: none;
-}
-
-.gaze-status-dot {
-  width: 8px;
-  height: 8px;
-  border-radius: 99px;
-  background: var(--correct);
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  .gaze-status-dot {
-    animation: gaze-pulse 1.4s ease-in-out infinite;
-  }
-}
-
 @keyframes gaze-pulse {
   0%, 100% {
     opacity: 0.45;
