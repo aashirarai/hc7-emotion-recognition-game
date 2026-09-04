@@ -73,11 +73,21 @@ frontend — the server only stores whatever state the client sends via
 
 The game divides the stimulus pool into 5 cumulative difficulty tiers, each
 defined by a ceiling on the `difficulty` field (0 = easiest, 1 = hardest, see
-"Difficulty score (Hᵤ)" above): a tier's pool is every stimulus with
+"Difficulty score (Hᵤ)" above): a tier's pool starts as every stimulus with
 `difficulty ≤ TIER_THRESHOLDS[tierIndex]`, so easier stimuli stay in rotation
 alongside newly-unlocked harder ones. Thresholds (`TIER_THRESHOLDS` in
 `tierEngine.js`): `[0.17, 0.33, 0.48, 0.68, 1.00]` — starting values, computed
 from the decile spread of KDEF `difficultyScore`s, retune after pilot testing.
+
+That ceiling-filtered set is then balanced by emotion in `getPoolForTier`:
+stimuli are grouped by `emotion` and each group is capped to the size of the
+smallest group, so the pool is an even 1/7 split across emotions at every
+tier. Without this step, emotions with more naturally "easy" KDEF images
+(e.g. happy) would dominate the early tiers' pools while emotions with few
+easy exemplars (e.g. fear) barely appeared. At the easiest tiers the
+always-difficulty-0 cartoon stimuli end up standing in for KDEF images for
+emotions that don't have enough easy ones — no special-casing, they're just
+part of that emotion's group like any other stimulus.
 
 New participants start at tier 0. Tier changes are evaluated once per
 completed session and take effect at the start of the *next* session (no
