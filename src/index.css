@@ -87,6 +87,7 @@ input:focus-visible {
 
 .btn-primary:hover { background: var(--primary-hover); }
 
+/* ─── Emotion response buttons ─── */
 .btn-emotion {
   background: var(--surface);
   color: var(--text);
@@ -95,8 +96,10 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
-  min-height: 68px;
+  min-height: 54px;
+  padding: 0.45rem 0.6rem;
   font-size: 1.1rem;
 }
 
@@ -111,7 +114,48 @@ input:focus-visible {
   line-height: 1;
 }
 
+/* ─── Start screen actions ─── */
+.start-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.start-actions > button {
+  width: 100%;
+  min-height: 48px;
+}
+
+.start-actions > button:not(.btn-primary) {
+  background: #f8fafc;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+
+.start-actions > button:not(.btn-primary):hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #eef2ff;
+}
+
+/* Standalone gaze check is a secondary action */
+.start-gaze-check {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 480px) {
+  .start-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .start-gaze-check {
+    grid-column: auto;
+  }
+}
+
 /* ─── Stimulus card ─── */
+/* Keep these dimensions unchanged so the final layout preserves
+   the same stimulus geometry used during earlier gaze self-tests. */
 .stimulus-card {
   position: relative;
   display: flex;
@@ -130,18 +174,14 @@ input:focus-visible {
   object-fit: contain;
 }
 
-/* ─── Emotion button grid (3 × 2, +1 centered) ─── */
+/* ─── Emotion response grid ─── */
+/* Seven options now fit across two rows, reducing vertical height
+   without changing the stimulus card or stimulus image dimensions. */
 .button-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-top: 0.75rem;
-}
-
-/* A 7th option would otherwise sit alone on the left of a new row —
-   center it instead, regardless of which emotion ends up in that slot. */
-.button-grid > button:nth-child(7):last-child {
-  grid-column: 2;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 /* ─── Progress bar ─── */
@@ -153,6 +193,7 @@ input:focus-visible {
 }
 
 .progress-label {
+  flex-shrink: 0;
   font-size: 0.8rem;
   color: var(--text-muted);
   text-align: right;
@@ -160,6 +201,8 @@ input:focus-visible {
 
 .progress-track {
   position: relative;
+  flex: 1;
+  min-width: 0;
   height: 10px;
   background: var(--border);
   border-radius: 99px;
@@ -175,6 +218,7 @@ input:focus-visible {
 }
 
 .progress-gaze-chip {
+  flex-shrink: 0;
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
@@ -219,7 +263,7 @@ input:focus-visible {
 }
 
 .streak-badge {
-  align-self: flex-start;
+  flex-shrink: 0;
   background: #fef3c7;
   color: #b45309;
   font-size: 0.85rem;
@@ -706,7 +750,6 @@ pre {
   }
 }
 
-
 .calibration-target-burst {
   position: fixed;
   width: 1px;
@@ -823,4 +866,3 @@ pre {
     font-size: 0.78rem;
   }
 }
-

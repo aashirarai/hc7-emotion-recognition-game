@@ -23,7 +23,7 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0,
     const progressPct = (trialNumber / totalTrials) * 100
 
     return (
-        <div className="card">
+        <div className="card trial-card">
             {/* Progress */}
             <div className="progress-header">
                 {gazeTrackingActive ? (
@@ -34,9 +34,7 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0,
                         <span className="progress-gaze-dot" />
                         Webcam on
                     </div>
-                ) : (
-                    <span />
-                )}
+                ) : null}
 
                 {streak >= 2 && (
                     <span className="streak-badge">🔥 {streak} in a row!</span>

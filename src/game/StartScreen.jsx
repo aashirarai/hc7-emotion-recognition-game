@@ -81,20 +81,26 @@ function StartScreen({
 
             <ThemePicker />
             
-            <div className="button-stack">
-                <button type="button" onClick={onStartCalibrationCheck}>
-                    Run gaze check
-                </button>
-
+            <div className="start-actions">
                 <button
                     className="btn-primary"
-                    onClick={() => onStart({ webcamRequested: false })}>
+                    onClick={() => onStart({ webcamRequested: false })}
+                >
                     Start without webcam
                 </button>
 
                 <button
-                    onClick={() => onStart({ webcamRequested: true })}>
+                    onClick={() => onStart({ webcamRequested: true })}
+                >
                     Enable webcam and start
+                </button>
+
+                <button
+                    type="button"
+                    className="start-gaze-check"
+                    onClick={onStartCalibrationCheck}
+                >
+                    Run gaze check
                 </button>
             </div>
         </div>
