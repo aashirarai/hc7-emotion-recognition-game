@@ -7,6 +7,7 @@ import RoleSelectScreen from './RoleSelectScreen'
 import GuardianAuthScreen from './dashboard/GuardianAuthScreen'
 import GuardianDashboard from './dashboard/GuardianDashboard'
 import { clearGuardianSession } from './data/guardianStore'
+import { ThemeProvider } from './theme/ThemeContext'
 
 function App() {
     // 'student' or 'guardian' fork, or null while on the role picker
@@ -42,7 +43,11 @@ function App() {
         )
     }
 
-    return <main className="app">{content}</main>
+    return (
+        <ThemeProvider key={participant?.participantId ?? 'global'} scopeId={participant?.participantId ?? null}>
+            <main className="app">{content}</main>
+        </ThemeProvider>
+    )
 }
 
 export default App

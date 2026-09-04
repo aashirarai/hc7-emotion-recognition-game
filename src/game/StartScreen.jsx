@@ -1,4 +1,5 @@
 import { TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
+import ThemePicker from '../theme/ThemePicker'
 
 function StartScreen({
     onStart,
@@ -78,6 +79,8 @@ function StartScreen({
                 </p>
             </div>
 
+            <ThemePicker />
+            
             <div className="button-stack">
                 <button type="button" onClick={onStartCalibrationCheck}>
                     Run gaze check

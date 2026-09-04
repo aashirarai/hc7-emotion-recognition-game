@@ -1,4 +1,6 @@
-import { emotionOptions } from "../stimuli/stimuliManifest";
+import { EMOTION_EMOJIS, emotionOptions } from "../stimuli/stimuliManifest";
+
+const MILESTONES = [0.25, 0.5, 0.75];
 
 function StimulusDisplay({ stimulus }) {
     if (stimulus.imageSrc) {
@@ -17,13 +19,18 @@ function StimulusDisplay({ stimulus }) {
     return null;
 }
 
+<<<<<<< HEAD
 function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, gazeTrackingActive = false }) {
+=======
+function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0 }) {
+>>>>>>> dev
     const progressPct = (trialNumber / totalTrials) * 100
 
     return (
         <div className="card">
             {/* Progress */}
             <div className="progress-header">
+<<<<<<< HEAD
                 {gazeTrackingActive ? (
                     <div className="progress-gaze-chip" aria-label="Webcam gaze tracking active">
                         <span className="progress-gaze-dot" />
@@ -34,7 +41,27 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, gazeTrackin
                 )}
 
                 <div className="progress-track">
+=======
+                {streak >= 2 && (
+                    <span className="streak-badge">🔥 {streak} in a row!</span>
+                )}
+                <div
+                    className="progress-track"
+                    role="progressbar"
+                    aria-valuenow={trialNumber}
+                    aria-valuemin={0}
+                    aria-valuemax={totalTrials}
+                    aria-valuetext={`Trial ${trialNumber} of ${totalTrials}`}
+                >
+>>>>>>> dev
                     <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+                    {MILESTONES.map((milestone) => (
+                        <span
+                            key={milestone}
+                            className={`progress-milestone${progressPct >= milestone * 100 ? ' progress-milestone-reached' : ''}`}
+                            style={{ left: `${milestone * 100}%` }}
+                        />
+                    ))}
                 </div>
                 <span className="progress-label">Trial {trialNumber} of {totalTrials}</span>
             </div>
@@ -64,6 +91,9 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, gazeTrackin
                             className="btn-emotion"
                             onClick={() => onAnswer(emotion)}
                         >
+                            <span className="btn-emotion-icon" aria-hidden="true">
+                                {EMOTION_EMOJIS[emotion]}
+                            </span>
                             {emotion}
                         </button>
                     ))}
