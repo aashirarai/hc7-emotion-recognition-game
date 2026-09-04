@@ -6,6 +6,7 @@ import { buildAdaptiveTrialSequence, createSessionId, createTrialLog, downloadCS
 import { computeSessionComposite } from '../adaptive/scoring'
 import { applyAdaptiveUpdate, TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
 import { addSessionResult, getAdaptiveState, saveTrialLogs, updateAdaptiveState } from '../data/participantStore'
+import { computeCurrentStreak, getStarRating, STAR_RATING_LABELS } from './gamification'
 
 import StartScreen from './StartScreen'
 import TrialScreen from './TrialScreen'
@@ -48,6 +49,9 @@ function GameSession({ participant, onLogout }) {
     // Stores the most recent trial log so the feedback screen can display it
     const [lastTrialLog, setLastTrialLog] = useState(null)
 
+    // Cosmetic-only: consecutive correct answers so far this session
+    const [currentStreak, setCurrentStreak] = useState(0)
+
     // Controls whether the feedback screen is shown
     const [showFeedback, setShowFeedback] = useState(false)
 
@@ -85,6 +89,7 @@ function GameSession({ participant, onLogout }) {
         setTrialLogs([])
         setLastTrialLog(null)
         setShowFeedback(false)
+        setCurrentStreak(0)
     }
 
     // Called when the user selects an answer
@@ -113,6 +118,9 @@ function GameSession({ participant, onLogout }) {
 
         // Store the most recent trial log for the feedback screen
         setLastTrialLog(log)
+
+        // Cosmetic-only streak counter, derived from the updated logs
+        setCurrentStreak(computeCurrentStreak(updatedLogs))
 
         // Show feedback
         setShowFeedback(true)
@@ -178,6 +186,7 @@ function GameSession({ participant, onLogout }) {
         setTrialLogs([])
         setLastTrialLog(null)
         setShowFeedback(false)
+        setCurrentStreak(0)
     }
 
 
@@ -199,9 +208,16 @@ function GameSession({ participant, onLogout }) {
     if (sessionComplete) {
         const { correctCount, totalTrials: total, compositeScore, meanReactionTimeMs } =
             computeSessionComposite(trialLogs)
+        const starRating = getStarRating(compositeScore)
 
         return (
             <div className="card">
+                <div className="star-rating">
+                    <div className="star-rating-stars" aria-hidden="true">
+                        {'⭐'.repeat(starRating)}{'☆'.repeat(3 - starRating)}
+                    </div>
+                    <p className="star-rating-label">{STAR_RATING_LABELS[starRating]}</p>
+                </div>
                 <div>
                     <div className="score-value">{correctCount} / {total}</div>
                     <p className="score-label">correct answers</p>
@@ -254,6 +270,7 @@ function GameSession({ participant, onLogout }) {
         trialNumber={currentTrialIndex + 1}
         totalTrials={totalTrials}
         onAnswer={handleAnswer}
+        streak={currentStreak}
         />
     )
 }

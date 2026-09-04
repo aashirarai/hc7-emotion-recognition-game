@@ -7,8 +7,10 @@ import metadata from './metadata.json'
 // are unaffected by this flag.
 const FRONT_FACING_ONLY = true
 
-// Emoji shown as fallback if an image file is missing or fails to load
-const EMOTION_EMOJIS = {
+// Emoji shown as fallback if an image file is missing or fails to load,
+// and reused as icons on the answer buttons so pre-readers aren't blocked
+// by literacy.
+export const EMOTION_EMOJIS = {
     happy:   '😊',
     sad:     '😢',
     angry:   '😠',

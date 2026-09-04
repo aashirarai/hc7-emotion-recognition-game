@@ -1,4 +1,5 @@
 import { TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
+import ThemePicker from '../theme/ThemePicker'
 
 function StartScreen({ onStart, participant, previousSessions, adaptiveState, onLogout }) {
     const lastSession = previousSessions?.length ? previousSessions[previousSessions.length - 1] : null
@@ -34,6 +35,8 @@ function StartScreen({ onStart, participant, previousSessions, adaptiveState, on
                     <p className="score-label">composite score</p>
                 </div>
             )}
+
+            <ThemePicker />
 
             <button className="btn-primary" onClick={onStart}>
                 Start session
