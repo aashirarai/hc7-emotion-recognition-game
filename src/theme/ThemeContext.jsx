@@ -1,7 +1,6 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { DEFAULT_THEME_ID, THEMES, getTheme } from './themes'
-
-const ThemeContext = createContext(null)
+import { ThemeContext } from './themeContextObject'
 
 function storageKey(scopeId) {
     return `theme:${scopeId ?? 'global'}`
@@ -29,13 +28,13 @@ function applyThemeVars(theme) {
 // scopeId scopes theme persistence to a participant (so one child's theme
 // choice never leaks into a sibling's session on a shared device). Pass
 // null/undefined pre-login to fall back to a shared "global" slot.
+//
+// The caller must remount this provider on scopeId change (e.g. `key={scopeId}`)
+// so the lazy useState initializer below re-reads the new scope's persisted
+// theme — that's the sanctioned pattern for state that resets on identity
+// change, rather than syncing it back with a second effect.
 export function ThemeProvider({ scopeId, children }) {
     const [themeId, setThemeId] = useState(() => readStoredThemeId(scopeId))
-
-    // Re-read persisted theme whenever the logged-in participant changes.
-    useEffect(() => {
-        setThemeId(readStoredThemeId(scopeId))
-    }, [scopeId])
 
     useEffect(() => {
         applyThemeVars(getTheme(themeId))
@@ -50,12 +49,4 @@ export function ThemeProvider({ scopeId, children }) {
     const value = useMemo(() => ({ themeId, setThemeId, themes: THEMES }), [themeId])
 
     return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
-}
-
-export function useTheme() {
-    const context = useContext(ThemeContext)
-    if (!context) {
-        throw new Error('useTheme must be used within a ThemeProvider')
-    }
-    return context
 }

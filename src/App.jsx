@@ -44,7 +44,7 @@ function App() {
     }
 
     return (
-        <ThemeProvider scopeId={participant?.participantId ?? null}>
+        <ThemeProvider key={participant?.participantId ?? 'global'} scopeId={participant?.participantId ?? null}>
             <main className="app">{content}</main>
         </ThemeProvider>
     )

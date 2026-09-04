@@ -1,4 +1,4 @@
-import { useTheme } from './ThemeContext'
+import { useTheme } from './useTheme'
 
 function ThemePicker() {
     const { themeId, setThemeId, themes } = useTheme()

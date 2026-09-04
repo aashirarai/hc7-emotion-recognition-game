@@ -1,7 +1,7 @@
 import { TIER_LABELS, TIER_THRESHOLDS } from '../adaptive/tierEngine'
 import ThemePicker from '../theme/ThemePicker'
 
-function StartScreen({ onStart, participant, previousSessions, adaptiveState, onLogout }) {
+function StartScreen({ onStart, previousSessions, adaptiveState, onLogout }) {
     const lastSession = previousSessions?.length ? previousSessions[previousSessions.length - 1] : null
 
     return (
