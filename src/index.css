@@ -174,7 +174,6 @@ input:focus-visible {
   overflow: hidden;
 }
 
-<<<<<<< HEAD
 .progress-gaze-chip {
   display: inline-flex;
   align-items: center;
@@ -202,8 +201,6 @@ input:focus-visible {
   }
 }
 
-=======
->>>>>>> dev
 .progress-milestone {
   position: absolute;
   top: 50%;

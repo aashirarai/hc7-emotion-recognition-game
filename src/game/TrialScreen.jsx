@@ -19,20 +19,18 @@ function StimulusDisplay({ stimulus }) {
     return null;
 }
 
-<<<<<<< HEAD
-function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, gazeTrackingActive = false }) {
-=======
-function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0 }) {
->>>>>>> dev
+function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0, gazeTrackingActive = false }) {
     const progressPct = (trialNumber / totalTrials) * 100
 
     return (
         <div className="card">
             {/* Progress */}
             <div className="progress-header">
-<<<<<<< HEAD
                 {gazeTrackingActive ? (
-                    <div className="progress-gaze-chip" aria-label="Webcam gaze tracking active">
+                    <div 
+                        className="progress-gaze-chip"
+                        aria-label="Webcam gaze tracking active"
+                    >
                         <span className="progress-gaze-dot" />
                         Webcam on
                     </div>
@@ -40,21 +38,19 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0 
                     <span />
                 )}
 
-                <div className="progress-track">
-=======
                 {streak >= 2 && (
                     <span className="streak-badge">🔥 {streak} in a row!</span>
                 )}
-                <div
-                    className="progress-track"
-                    role="progressbar"
-                    aria-valuenow={trialNumber}
-                    aria-valuemin={0}
-                    aria-valuemax={totalTrials}
-                    aria-valuetext={`Trial ${trialNumber} of ${totalTrials}`}
-                >
->>>>>>> dev
-                    <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+
+            <div
+                className="progress-track"
+                role="progressbar"
+                aria-valuenow={trialNumber}
+                aria-valuemin={0}
+                aria-valuemax={totalTrials}
+                aria-valuetext={`Trial ${trialNumber} of ${totalTrials}`}
+            >
+                <div className="progress-fill" style={{ width: `${progressPct}%` }} />
                     {MILESTONES.map((milestone) => (
                         <span
                             key={milestone}
