@@ -638,7 +638,7 @@ function GameSession({ participant, onLogout }) {
         const starRating = getStarRating(compositeScore)
 
         return (
-            <div className="card">
+            <div className="card session-summary-card">
 
                 <details>
                     <summary>View session metadata</summary>

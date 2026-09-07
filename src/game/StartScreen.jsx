@@ -15,7 +15,7 @@ function StartScreen({
         : null
 
     return (
-        <div className="card">
+        <div className="card start-screen-card">
             <div className="start-header">
                 <div>
                     <h1>Emotion Recognition</h1>
@@ -65,22 +65,19 @@ function StartScreen({
             )}
 
             <div style={{ marginTop: '1rem' }}>
-                <h2>Optional webcam-based attention tracking</h2>
+                <h2>Optional webcam-based eye tracking</h2>
                 <p
                     style={{
                         marginTop: '0.5rem',
                         color: 'var(--text-muted)',
                     }}
                 >
-                    You can optionally enable your webcam for this session.
-                    This will later be used to estimate coarse attention
-                    patterns during the task. The game can still be played
-                    without webcam access.
+                    Use you webcam to estimate coarse gaze patterns during the game. No video is stored.
                 </p>
             </div>
 
             <ThemePicker />
-            
+
             <div className="start-actions">
                 <button
                     className="btn-primary"
