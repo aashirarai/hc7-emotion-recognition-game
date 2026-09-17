@@ -4,8 +4,6 @@ import ThemePicker from '../theme/ThemePicker'
 function StartScreen({
     onStart,
     onStartCalibrationCheck,
-    calibrationSummary,
-    participant,
     previousSessions,
     adaptiveState,
     onLogout,
@@ -72,7 +70,7 @@ function StartScreen({
                         color: 'var(--text-muted)',
                     }}
                 >
-                    Use you webcam to estimate coarse gaze patterns during the game. No video is stored.
+                    Use your webcam to estimate coarse gaze patterns during the game. No video is stored.
                 </p>
             </div>
 
