@@ -29,6 +29,7 @@ Thumbs.db
 coverage/
 
 # Local data/exports
+*.sqlite*
 data/raw/
 data/exports/
 recordings/
