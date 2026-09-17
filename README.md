@@ -1,83 +1,55 @@
-# Online Emotion-Recognition Game for Early Identification of & Training on Social-Communication Differences
-Browser-based prototype for an emotion-recognition game with performance logging, dashboard summaries, adaptive difficulty, and an optional webcam-based gaze estimation module.
+# Emotion Recognition Game
 
-## Project status
-Prototype in development.
+A browser-based research prototype for practising facial emotion recognition and exploring whether optional webcam gaze estimates add useful context to behavioural results. Built as part of the HC7 MSc Biomedical Engineering (Neurotechnology) project at Imperial College London.
 
-## Intended use
-This project is support-focused and non-diagnostic. It aims to aid structured observation (identification) and practice (training) of facial emotion recognition rather than assign diagnostic labels.
+**Status:** research prototype. The gaze analysis is exploratory, the project has only been self-tested, and it is not a diagnostic or clinically validated tool.
 
-The core game must remain usable without webcam access, adaptive difficulty, or any optional module including gaze estimation.
+## What it does
 
-## Planned features
-- Student-facing game UI
-- Multiple-choice emotion labelling task
-- Trial-level performance logging
-- CSV export
-- Guardian/parent-facing dashboard summaries (accuracy, RT, tier progression, confusions)
-- Adaptive difficulty module, with an intended machine-learning-based component
-- Optional webcam gaze estimation module
-- Coarse AOI-based attention proxies
-- Tracking-quality metrics
+- Presents a seven-choice facial emotion task and records accuracy and response time for each trial.
+- Adjusts difficulty across sessions using performance-based scoring.
+- Stores pseudonymous participant sessions in SQLite and displays history, charts and confusion matrices in a guardian dashboard.
+- Offers an optional webcam setup and calibration check. Gaze estimates are summarised against the displayed image and its upper/lower halves; these regions are **not** verified face or eye/mouth regions. The game can be played without a webcam, and raw video is not stored.
+- Includes theme and reduced-motion support.
 
-## Tech stack
-- Vite
-- React
-- Javascript
-- CSS
-- Recharts (guardian dashboard charts)
-- Node.js / Express (API server)
-- SQLite (participant data store)
+## Stack
 
-## Running locally 
+React, Vite and CSS on the frontend; Node.js, Express and SQLite on the API; WebGazer and MediaPipe for the optional gaze flow; Recharts for dashboard plots.
 
-This is two processes: the API server (`server/`) and the Vite frontend
-(repo root). Start both, in separate terminals.
+## Run locally
 
-**1. API server**
+Requires Node.js 22.5 or newer and npm. Start the API and frontend in separate terminals:
+
 ```bash
 cd server
-npm install
+npm ci
 npm run dev
 ```
-Starts on `http://localhost:3001` by default and creates `server/data.sqlite`
-on first run. Copy `server/.env.example` to `server/.env` to set `PORT` or
-`ADMIN_API_KEY` (used to protect the dashboard endpoints — see
-`docs/data-schema.md`).
 
-**2. Frontend**
 ```bash
-npm install
-npm run dev
-```
-Then open the local URL shown in the terminal. The frontend talks to the API
-server at `VITE_API_BASE_URL` (defaults to `http://localhost:3001` if unset —
-copy `.env.example` to `.env` at the repo root to override it).
-
-## Repository structure
-```text
-src/game/           Core game logic and trial flow
-src/data/           Trial logging, schema helpers, CSV export
-src/dashboard/      Dashboard summaries and visualisations
-src/adaptive/       Adaptive difficulty logic
-src/gaze/           Optional webcam/gaze functionality
-src/stimuli/        Stimulus metadata
-src/components/     Shared UI components
-src/utils/          General helper functions
-server/             API server (Express + SQLite) for participant/session/trial data
-docs/               Project documentation and development notes
-tests/              Tests
+npm ci
+npm run dev:web
 ```
 
-## Data and privacy
-- Do not commit real participant data.
-- Do not commit raw webcam footage.
-- Do not commit `.env` files, API keys, or private files.
-- Webcam functionality should be optional and require consent.
-- Use pseudonymous session IDs for logs.
-- Keep example data clearly marked as dummy data.
+Open the URL printed by Vite. The API defaults to `http://localhost:3001`; it creates `server/data.sqlite` on first run. To change its port or set an admin key, copy `server/.env.example` to `server/.env` and edit the values. To change the frontend API URL, copy `.env.example` to `.env` and set `VITE_API_BASE_URL`. Keep the API local for this demo: its default CORS policy and example configuration are not a production deployment setup.
 
-## Contributors
-- Aashira Rai -
-- Chloe Cheung - 
-- Shared - core game, logging, dashboard, integration
+For a production bundle, run `npm run build`. Run `npm run lint` to check the frontend source.
+
+## Where to look
+
+| Area | Code |
+| --- | --- |
+| Game flow and trial logging | `src/game/`, `src/data/` |
+| Scoring and adaptive tiers | `src/adaptive/` |
+| Webcam setup and gaze summaries | `src/gaze/` |
+| Dashboard | `src/dashboard/` |
+| API, authentication and database | `server/src/` |
+| Schema and self-test notes | `docs/data-schema.md`, `docs/evaluation/gaze-self-test.md` |
+
+## Data and stimulus images
+
+Use made-up participant IDs when trying the app. Do not enter real participant data. The repository contains KDEF facial stimuli; their inclusion here does not grant permission to reuse or redistribute them. Check the dataset's terms with its rights holder before using those images elsewhere. The `KDEF/` source set and `src/stimuli/images/` playable copies make this repository unusually large.
+
+## Contributions
+
+This is a group project by Aashira Rai and Chloe Cheung. Aashira's work included the webcam gaze module, pre-game calibration flow, game-loop prototype and unit tests. The game, API and dashboard include collaborative work; commit history provides further provenance.
