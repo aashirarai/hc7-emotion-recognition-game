@@ -9,6 +9,13 @@ export function createTrialLog({
     stimulus,
     selectedEmotion,
     reactionTimeMs,
+    trialDurationFlag = 'not_computed',
+    gazeSampleCount = 0,
+    gazeDurationMs = null,
+    gazeSamplingRateHz = 0,
+    gazeQualityFlag = 'not_computed',
+    gazeSummary = {},
+    calibrationSummary = null,
 }) {
     // Check whether the selected answer matches the correct emotion
     const isCorrect = (selectedEmotion === stimulus.emotion)
@@ -28,11 +35,61 @@ export function createTrialLog({
         selectedEmotion,
         isCorrect,
         reactionTimeMs,
+        trialDurationFlag,
 
         // Game setting fields
         difficulty: stimulus.difficulty ?? "unassigned",
         mode: "normal",
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+
+        // Basic gaze fields
+        gazeDataAvailable: gazeSampleCount > 0,
+        gazeSampleCount,
+        gazeDurationMs,
+        gazeSamplingRateHz,
+        gazeQualityFlag,
+
+        gazeSamplesTotal: gazeSummary.gazeSamplesTotal ?? gazeSampleCount,
+
+        // Screen dimensions and stimulus ratios
+        viewportWidth: gazeSummary.viewportWidth ?? null,
+        viewportHeight: gazeSummary.viewportHeight ?? null,
+        screenAreaPx: gazeSummary.screenAreaPx ?? null,
+
+        stimulusCardAreaPx: gazeSummary.stimulusCardAreaPx ?? null,
+        stimulusImageAreaPx: gazeSummary.stimulusImageAreaPx ?? null,
+        stimulusCardAreaRatio: gazeSummary.stimulusCardAreaRatio ?? null,
+        stimulusImageAreaRatio: gazeSummary.stimulusImageAreaRatio ?? null,
+
+        // On-/off-stimulus card AOI
+        onStimulusCardCount: gazeSummary.onStimulusCardCount ?? 0,
+        offStimulusCardCount: gazeSummary.offStimulusCardCount ?? 0,
+        onStimulusCardDwellProp: gazeSummary.onStimulusCardDwellProp ?? null,
+        offStimulusCardDwellProp: gazeSummary.offStimulusCardDwellProp ?? null,
+
+        // On-/off-stimulus image AOI
+        onStimulusImageCount: gazeSummary.onStimulusImageCount ?? 0,
+        offStimulusImageCount: gazeSummary.offStimulusImageCount ?? 0,
+        onStimulusImageDwellProp: gazeSummary.onStimulusImageDwellProp ?? null,
+        offStimulusImageDwellProp: gazeSummary.offStimulusImageDwellProp ?? null,
+
+        // Upper/lower image AOI
+        upperImageCount: gazeSummary.upperImageCount ?? 0,
+        lowerImageCount: gazeSummary.lowerImageCount ?? 0,
+        upperImageDwellProp: gazeSummary.upperImageDwellProp ?? null,
+        lowerImageDwellProp: gazeSummary.lowerImageDwellProp ?? null,
+        upperLowerImageRatio: gazeSummary.upperLowerImageRatio ?? null,
+
+        // Calibration check metrics
+        calibrationCompleted: calibrationSummary?.calibrationCompleted ?? false,
+        calibrationTargetCount: calibrationSummary?.calibrationTargetCount ?? 0,
+        meanCalibrationErrorPx: calibrationSummary?.meanCalibrationErrorPx ?? null,
+        medianCalibrationErrorPx: calibrationSummary?.medianCalibrationErrorPx ?? null,
+        maxCalibrationErrorPx: calibrationSummary?.maxCalibrationErrorPx ?? null,
+        meanXErrorPx: calibrationSummary?.meanXErrorPx ?? null,
+        meanYErrorPx: calibrationSummary?.meanYErrorPx ?? null,
+        medianYErrorPx: calibrationSummary?.medianYErrorPx ?? null,
+        calibrationQualityFlag: calibrationSummary?.calibrationQualityFlag ?? 'not_available',
     }
 }
 

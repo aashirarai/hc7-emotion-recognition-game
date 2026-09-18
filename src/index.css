@@ -87,6 +87,7 @@ input:focus-visible {
 
 .btn-primary:hover { background: var(--primary-hover); }
 
+/* ─── Emotion response buttons ─── */
 .btn-emotion {
   background: var(--surface);
   color: var(--text);
@@ -95,8 +96,10 @@ input:focus-visible {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: center;
   gap: 0.25rem;
-  min-height: 68px;
+  min-height: 54px;
+  padding: 0.45rem 0.6rem;
   font-size: 1.1rem;
 }
 
@@ -111,8 +114,50 @@ input:focus-visible {
   line-height: 1;
 }
 
+/* ─── Start screen actions ─── */
+.start-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.start-actions > button {
+  width: 100%;
+  min-height: 48px;
+}
+
+.start-actions > button:not(.btn-primary) {
+  background: #f8fafc;
+  color: var(--text);
+  border: 1.5px solid var(--border);
+}
+
+.start-actions > button:not(.btn-primary):hover {
+  border-color: var(--primary);
+  color: var(--primary);
+  background: #eef2ff;
+}
+
+/* Standalone gaze check is a secondary action */
+.start-gaze-check {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 480px) {
+  .start-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .start-gaze-check {
+    grid-column: auto;
+  }
+}
+
 /* ─── Stimulus card ─── */
+/* Normal/desktop stimulus geometry. Short viewports override this below
+   so the complete active trial can remain visible without scrolling. */
 .stimulus-card {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -129,22 +174,26 @@ input:focus-visible {
   object-fit: contain;
 }
 
-/* ─── Emotion button grid (3 × 2) ─── */
+/* ─── Emotion response grid ─── */
+/* Seven options now fit across two rows, reducing vertical height
+   without changing the stimulus card or stimulus image dimensions. */
 .button-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem;
-  margin-top: 0.75rem;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.5rem;
+  margin-top: 0.5rem;
 }
 
 /* ─── Progress bar ─── */
 .progress-header {
   display: flex;
-  flex-direction: column;
-  gap: 0.4rem;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
 }
 
 .progress-label {
+  flex-shrink: 0;
   font-size: 0.8rem;
   color: var(--text-muted);
   text-align: right;
@@ -152,6 +201,8 @@ input:focus-visible {
 
 .progress-track {
   position: relative;
+  flex: 1;
+  min-width: 0;
   height: 10px;
   background: var(--border);
   border-radius: 99px;
@@ -164,6 +215,34 @@ input:focus-visible {
   border-radius: 99px;
   transition: width 0.3s ease;
   overflow: hidden;
+}
+
+.progress-gaze-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.55rem;
+  border-radius: 99px;
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 600;
+  line-height: 1;
+}
+
+.progress-gaze-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--correct);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .progress-gaze-dot {
+    animation: gaze-pulse 1.4s ease-in-out infinite;
+  }
 }
 
 .progress-milestone {
@@ -184,7 +263,7 @@ input:focus-visible {
 }
 
 .streak-badge {
-  align-self: flex-start;
+  flex-shrink: 0;
   background: #fef3c7;
   color: #b45309;
   font-size: 0.85rem;
@@ -510,4 +589,608 @@ pre {
   outline: 2px solid var(--primary);
   outline-offset: -2px;
   font-weight: 700;
+}
+
+/* ─── Gaze setup / calibration ─── */
+
+/* Intro + completion screens use the shared .card styling */
+.calibration-check-screen {
+  min-height: 100vh;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem 1rem;
+}
+
+.calibration-card {
+  text-align: center;
+  max-width: 640px;
+}
+
+.calibration-intro {
+  color: var(--text);
+  font-size: 1rem;
+}
+
+.calibration-privacy-note {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.calibration-target-info {
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.calibration-step-label {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--primary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.calibration-step-text {
+  margin-top: 0.25rem;
+  color: var(--text-muted);
+}
+
+.calibration-progress-dots {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.calibration-progress-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 99px;
+  background: var(--border);
+  transition: background 0.2s ease, transform 0.2s ease;
+}
+
+.calibration-progress-dot-complete {
+  background: var(--primary);
+  transform: scale(1.1);
+}
+
+/* Target-only phase: keeps calibration dots away from the instruction card */
+.calibration-target-screen {
+  min-height: 100vh;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+}
+
+.calibration-floating-panel {
+  position: fixed;
+  top: 1.25rem;
+  left: 50%;
+  z-index: 100;
+  transform: translateX(-50%);
+  width: min(620px, calc(100vw - 2rem));
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 1rem 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+  text-align: center;
+}
+
+.calibration-floating-panel h1 {
+  font-size: 1.25rem;
+}
+
+.calibration-floating-panel p {
+  color: var(--text-muted);
+  font-size: 0.9rem;
+}
+
+/* Fixed-position calibration target.
+   Position is controlled inline by the component using viewport ratios. */
+.calibration-target {
+  width: 42px;
+  height: 42px;
+  border-radius: 999px;
+  border: 4px solid var(--primary);
+  background: var(--surface);
+  color: var(--primary);
+  box-shadow:
+    0 0 0 10px rgba(79, 110, 247, 0.14),
+    0 0 28px rgba(79, 110, 247, 0.32);
+  z-index: 80;
+  padding: 0;
+  transition:
+    box-shadow 0.15s ease,
+    background 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.calibration-target:hover {
+  box-shadow:
+    0 0 0 14px rgba(79, 110, 247, 0.18),
+    0 0 34px rgba(79, 110, 247, 0.4);
+}
+
+.calibration-target:focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 6px;
+}
+
+/* Pop animation after each target click.
+   Uses scale instead of transform so it does not override inline centering. */
+.calibration-target-clicked {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .calibration-target-clicked {
+    animation: target-pop 0.18s ease-out;
+  }
+}
+
+@keyframes target-pop {
+  0% {
+    scale: 1;
+  }
+
+  45% {
+    scale: 1.35;
+  }
+
+  100% {
+    scale: 1;
+  }
+}
+
+.calibration-target-burst {
+  position: fixed;
+  width: 1px;
+  height: 1px;
+  z-index: 90;
+  pointer-events: none;
+  overflow: visible;
+}
+
+/* Calibration completion screen */
+.calibration-summary {
+  display: grid;
+  gap: 0.6rem;
+  text-align: left;
+  background: #f8fafc;
+  border: 1.5px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.calibration-summary p {
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.calibration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: center;
+}
+
+.calibration-quality-badge {
+  align-self: center;
+  display: inline-flex;
+  justify-content: center;
+  padding: 0.4rem 0.8rem;
+  border-radius: 99px;
+  font-size: 0.9rem;
+  font-weight: 700;
+  background: #eef2ff;
+  color: var(--primary);
+}
+
+.quality-excellent {
+  background: #dcfce7;
+  color: var(--correct);
+}
+
+.quality-usable {
+  background: #eef2ff;
+  color: var(--primary);
+}
+
+.quality-poor {
+  background: #fee2e2;
+  color: var(--incorrect);
+}
+
+.quality-not_available {
+  background: #f8fafc;
+  color: var(--text-muted);
+}
+
+.calibration-warning {
+  text-align: left;
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: var(--radius);
+  padding: 1rem;
+}
+
+.calibration-warning p {
+  margin-top: 0.35rem;
+}
+
+/* ─── Active gaze tracking status ─── */
+@keyframes gaze-pulse {
+  0%, 100% {
+    opacity: 0.45;
+    transform: scale(0.9);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.15);
+  }
+}
+
+/* Small-screen adjustments */
+@media (max-width: 640px) {
+  .calibration-floating-panel {
+    top: 0.75rem;
+    padding: 0.85rem 1rem;
+  }
+
+  .calibration-floating-panel h1 {
+    font-size: 1.1rem;
+  }
+
+  .calibration-floating-panel p {
+    font-size: 0.85rem;
+  }
+
+  .calibration-target {
+    width: 38px;
+    height: 38px;
+  }
+
+  .gaze-status-chip {
+    top: 0.75rem;
+    left: 0.75rem;
+    font-size: 0.78rem;
+  }
+}
+
+/* ─── Short viewport layouts ─── */
+@media (max-height: 750px) {
+
+  /* Reduce the outer page padding as vertical space becomes limited. */
+  .app {
+    padding: 0.75rem 1rem;
+  }
+
+  /* ── Active trial ── */
+  .trial-card {
+    padding: 0.75rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .trial-card .progress-header {
+    gap: 0.5rem;
+  }
+
+  .trial-card .progress-gaze-chip {
+    padding: 0.2rem 0.45rem;
+    font-size: 0.72rem;
+  }
+
+  .trial-card .progress-gaze-dot {
+    width: 7px;
+    height: 7px;
+  }
+
+  .trial-card .progress-label {
+    font-size: 0.72rem;
+  }
+
+  .trial-card h2 {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+
+  .trial-card .button-grid {
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+  }
+
+  .trial-card .btn-emotion {
+    min-height: 40px;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.9rem;
+    gap: 0.15rem;
+  }
+
+  .trial-card .btn-emotion-icon {
+    font-size: 1.1rem;
+  }
+
+  /* ── Gaze setup ── */
+  .calibration-check-screen {
+    min-height: calc(100vh - 4rem);
+    gap: 0.75rem;
+  }
+
+  .calibration-card {
+    padding: 1rem;
+    gap: 0.75rem;
+  }
+
+  .calibration-target-info {
+    padding: 0.65rem;
+  }
+
+  .calibration-summary {
+    padding: 0.65rem;
+    gap: 0.3rem;
+  }
+
+  .calibration-summary p {
+    line-height: 1.25;
+  }
+
+  .calibration-actions {
+    gap: 0.4rem;
+  }
+
+  .calibration-floating-panel {
+    top: 0.5rem;
+    padding: 0.65rem 1rem;
+    gap: 0.35rem;
+  }
+}
+
+/* Extra compression for laptop/browser viewports around the 551px height
+   used in the final self-test. The stimulus scales down rather than forcing
+   the response options below the fold. */
+@media (max-height: 620px) {
+  .app {
+    min-height: 100dvh;
+    padding: 0.5rem 1rem;
+  }
+
+  .trial-card {
+    padding: 0.6rem 0.85rem;
+    gap: 0.4rem;
+  }
+
+  .trial-card .progress-header {
+    gap: 0.35rem;
+  }
+
+  .trial-card .progress-track {
+    height: 8px;
+  }
+
+  .trial-card .stimulus-card {
+    min-height: 0;
+    height: clamp(180px, 37dvh, 220px);
+  }
+
+  .trial-card .stimulus-card img {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    object-fit: contain;
+  }
+
+  .trial-card h2 {
+    font-size: 0.95rem;
+    line-height: 1.15;
+  }
+
+  .trial-card .button-grid {
+    gap: 0.3rem;
+    margin-top: 0.3rem;
+  }
+
+  .trial-card .btn-emotion {
+    min-height: 36px;
+    padding: 0.18rem 0.4rem;
+    font-size: 0.82rem;
+    gap: 0.1rem;
+  }
+
+  .trial-card .btn-emotion-icon {
+    font-size: 1rem;
+  }
+}
+
+/* ─── Fluid start + end screens ─── */
+.start-screen-card,
+.session-summary-card {
+  width: min(92vw, 680px);
+
+  padding: clamp(
+    1rem,
+    2.5vh,
+    2rem
+  );
+
+  gap: clamp(
+    0.75rem,
+    2vh,
+    1.5rem
+  );
+}
+
+
+/* Start screen */
+
+.start-screen-card h1 {
+  font-size: clamp(1.4rem, 2.5vw, 1.75rem);
+}
+
+.start-screen-card h2 {
+  font-size: clamp(1rem, 1.8vw, 1.2rem);
+}
+
+.start-screen-card .start-actions {
+  gap: clamp(0.4rem, 1.2vh, 0.75rem);
+}
+
+.start-screen-card .start-actions > button {
+  min-height: clamp(42px, 6vh, 50px);
+  padding: clamp(0.5rem, 1.2vh, 0.75rem) 1rem;
+}
+
+
+/* End screen */
+
+.session-summary-card {
+  text-align: center;
+}
+
+.session-summary-card .score-value {
+  font-size: clamp(1.6rem, 4vh, 2.5rem);
+}
+
+.session-summary-card .score-label {
+  font-size: clamp(0.75rem, 1.7vh, 0.9rem);
+}
+
+.session-summary-card .star-rating-stars {
+  font-size: clamp(1.4rem, 4vh, 2rem);
+}
+
+.session-summary-card button {
+  padding: clamp(0.5rem, 1.2vh, 0.75rem) 1rem;
+}
+
+/* ─── Final viewport-responsive sizing ───
+   These rules intentionally come last so active trials scale with the
+   available browser viewport instead of relying on fixed 340px geometry. */
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  overflow-x: hidden;
+}
+
+.app {
+  min-height: 100dvh;
+  padding: clamp(0.5rem, 2vh, 2rem) 1rem;
+}
+
+.card {
+  width: min(100%, 600px);
+  padding: clamp(0.75rem, 2.4vh, 2rem);
+  gap: clamp(0.5rem, 1.6vh, 1.5rem);
+}
+
+/* Active trial: size every vertically expensive element from viewport height. */
+.trial-card {
+  width: min(96vw, 600px);
+  padding: clamp(0.55rem, 1.8vh, 1rem);
+  gap: clamp(0.35rem, 1.2vh, 0.75rem);
+}
+
+.trial-card .progress-header {
+  gap: clamp(0.3rem, 1vh, 0.75rem);
+}
+
+.trial-card .progress-track {
+  height: clamp(6px, 1.1vh, 10px);
+}
+
+.trial-card .progress-label,
+.trial-card .progress-gaze-chip {
+  font-size: clamp(0.68rem, 1.45vh, 0.8rem);
+}
+
+.trial-card .progress-gaze-chip {
+  padding: clamp(0.18rem, 0.6vh, 0.28rem) 0.5rem;
+}
+
+/* Crucial fix: remove the 340px minimum on active trials.
+   The image area now scales continuously with viewport height. */
+.trial-card .stimulus-card {
+  min-height: 0;
+  height: clamp(135px, 38dvh, 340px);
+  flex: 0 1 auto;
+}
+
+.trial-card .stimulus-card img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  max-height: none;
+  object-fit: contain;
+}
+
+.trial-card h2 {
+  font-size: clamp(0.9rem, 2.1vh, 1.2rem);
+  line-height: 1.15;
+}
+
+.trial-card .button-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(0.25rem, 0.8vh, 0.5rem);
+  margin-top: clamp(0.2rem, 0.7vh, 0.5rem);
+}
+
+.trial-card .btn-emotion {
+  min-height: clamp(32px, 6.2dvh, 54px);
+  padding: clamp(0.15rem, 0.65vh, 0.45rem) 0.45rem;
+  font-size: clamp(0.76rem, 1.8vh, 1.05rem);
+  gap: clamp(0.05rem, 0.35vh, 0.25rem);
+}
+
+.trial-card .btn-emotion-icon {
+  font-size: clamp(0.9rem, 2.4vh, 1.5rem);
+}
+
+/* Very short browser windows: prioritise keeping the whole trial visible. */
+@media (max-height: 560px) {
+  .app {
+    padding-block: 0.35rem;
+  }
+
+  .trial-card {
+    padding: 0.45rem 0.75rem;
+    gap: 0.3rem;
+  }
+
+  .trial-card .stimulus-card {
+    height: clamp(120px, 34dvh, 185px);
+  }
+
+  .trial-card .btn-emotion {
+    min-height: 30px;
+  }
+
+  .trial-card .progress-milestone {
+    width: 10px;
+    height: 10px;
+  }
+}
+
+/* Narrow phones/tablets: avoid four buttons becoming unreadably cramped. */
+@media (max-width: 520px) {
+  .trial-card .button-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .trial-card .stimulus-card {
+    height: clamp(120px, 32dvh, 240px);
+  }
 }

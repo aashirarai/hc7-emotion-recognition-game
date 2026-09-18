@@ -6,6 +6,7 @@ function StimulusDisplay({ stimulus }) {
     if (stimulus.imageSrc) {
         return (
             <img
+                id="active-stimulus-image-aoi"
                 src={stimulus.imageSrc}
                 alt={`${stimulus.emotion} face`}
                 onError={(e) => {
@@ -18,25 +19,36 @@ function StimulusDisplay({ stimulus }) {
     return null;
 }
 
-function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0 }) {
+function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0, gazeTrackingActive = false }) {
     const progressPct = (trialNumber / totalTrials) * 100
 
     return (
-        <div className="card">
+        <div className="card trial-card">
             {/* Progress */}
             <div className="progress-header">
+                {gazeTrackingActive ? (
+                    <div 
+                        className="progress-gaze-chip"
+                        aria-label="Webcam gaze tracking active"
+                    >
+                        <span className="progress-gaze-dot" />
+                        Webcam on
+                    </div>
+                ) : null}
+
                 {streak >= 2 && (
                     <span className="streak-badge">🔥 {streak} in a row!</span>
                 )}
-                <div
-                    className="progress-track"
-                    role="progressbar"
-                    aria-valuenow={trialNumber}
-                    aria-valuemin={0}
-                    aria-valuemax={totalTrials}
-                    aria-valuetext={`Trial ${trialNumber} of ${totalTrials}`}
-                >
-                    <div className="progress-fill" style={{ width: `${progressPct}%` }} />
+
+            <div
+                className="progress-track"
+                role="progressbar"
+                aria-valuenow={trialNumber}
+                aria-valuemin={0}
+                aria-valuemax={totalTrials}
+                aria-valuetext={`Trial ${trialNumber} of ${totalTrials}`}
+            >
+                <div className="progress-fill" style={{ width: `${progressPct}%` }} />
                     {MILESTONES.map((milestone) => (
                         <span
                             key={milestone}
@@ -49,7 +61,7 @@ function TrialScreen({ stimulus, trialNumber, totalTrials, onAnswer, streak = 0 
             </div>
 
             {/* Stimulus */}
-            <div className="stimulus-card">
+            <div className="stimulus-card" id="active-stimulus-card-aoi">
                 <StimulusDisplay stimulus={stimulus} />
                 <span
                     style={{
